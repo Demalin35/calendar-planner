@@ -11,6 +11,7 @@ import { useLiveQuery } from 'dexie-react-hooks';
 import { ChevronLeft, ChevronRight } from 'lucide-react';
 import { useMemo } from 'react';
 import { db } from '../../db';
+import { EmojiTitle } from '../../components/EmojiTitle';
 import { useUIStore } from '../../store/uiStore';
 import type { CalendarEvent } from '../../types';
 import { WEEKDAY_LABELS } from './constants';
@@ -172,10 +173,14 @@ function EventPill({
           onClick(e as unknown as React.MouseEvent);
         }
       }}
-      className="truncate rounded-md px-1.5 py-0.5 text-[10px] font-medium text-gray-800 sm:text-xs"
+      className="block truncate rounded-md px-1.5 py-0.5 text-[10px] font-medium text-gray-800 sm:text-xs"
       style={{ backgroundColor: `${event.color}66` }}
     >
-      {event.title}
+      <EmojiTitle
+        title={event.title}
+        emoji={event.emoji}
+        titleClassName="text-[10px] font-medium text-gray-800 sm:text-xs"
+      />
     </span>
   );
 }

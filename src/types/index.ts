@@ -7,6 +7,7 @@ export interface CalendarEvent {
   startTime: string;
   endTime: string;
   color: string;
+  emoji?: string;
   notes?: string;
   createdAt: Date;
   updatedAt: Date;
@@ -18,6 +19,7 @@ export interface Task {
   date?: string;
   notes?: string;
   color: string;
+  emoji?: string;
   completed: boolean;
   createdAt: Date;
   updatedAt: Date;

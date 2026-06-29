@@ -4,12 +4,14 @@ import { useLiveQuery } from 'dexie-react-hooks';
 import { CalendarPlus, ChevronLeft, ChevronRight, ListPlus } from 'lucide-react';
 import { useMemo } from 'react';
 import { db } from '../../db';
+import { EmojiTitle } from '../../components/EmojiTitle';
 import { useUIStore } from '../../store/uiStore';
 import type { CalendarEvent, Task } from '../../types';
 import { WEEKDAY_LABELS } from '../calendar/constants';
 import { formatDateKey, groupEventsByDate } from '../calendar/utils';
 import { DEFAULT_TASK_COLOR } from '../tasks/constants';
 import { getTaskColor } from '../tasks/utils';
+import { TaskTitle } from '../tasks/TaskTitle';
 import {
   formatWeekRangeLabel,
   getWeekDays,
@@ -211,14 +213,14 @@ function PlannerDayColumn({
             className="w-full min-w-0 rounded-lg px-2 py-1.5 text-left transition hover:opacity-80"
             style={{ backgroundColor: `${event.color}66` }}
           >
-            <p
-              className={clsx(
-                'truncate font-medium text-gray-900',
+            <EmojiTitle
+              title={event.title}
+              emoji={event.emoji}
+              titleClassName={clsx(
+                'font-medium text-gray-900',
                 compact ? 'text-[10px] xl:text-xs' : 'text-sm',
               )}
-            >
-              {event.title}
-            </p>
+            />
             {!compact && (
               <p className="truncate text-xs text-gray-600">
                 {event.startTime}
@@ -248,17 +250,16 @@ function PlannerDayColumn({
                     backgroundColor: getTaskColor(task, DEFAULT_TASK_COLOR),
                   }}
                 />
-                <span
-                  className={clsx(
-                    'min-w-0 flex-1 truncate',
+                <TaskTitle
+                  title={task.title}
+                  emoji={task.emoji}
+                  completed={task.completed}
+                  className="min-w-0 flex-1"
+                  titleClassName={clsx(
                     compact ? 'text-[10px] xl:text-xs' : 'text-sm',
-                    task.completed
-                      ? 'text-gray-400 line-through'
-                      : 'text-gray-800',
+                    !task.completed && 'text-gray-800',
                   )}
-                >
-                  {task.title}
-                </span>
+                />
               </button>
             ))}
           </div>

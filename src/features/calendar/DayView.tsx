@@ -4,6 +4,7 @@ import { useLiveQuery } from 'dexie-react-hooks';
 import { ChevronLeft, ChevronRight } from 'lucide-react';
 import { useMemo } from 'react';
 import { db } from '../../db';
+import { EmojiTitle } from '../../components/EmojiTitle';
 import { useUIStore } from '../../store/uiStore';
 import type { CalendarEvent } from '../../types';
 import {
@@ -191,7 +192,11 @@ function DayEventSection({
             className="rounded-lg px-3 py-1.5 text-left text-xs font-medium text-gray-800 transition hover:opacity-80 sm:text-sm"
             style={{ backgroundColor: `${event.color}66` }}
           >
-            {event.title}
+            <EmojiTitle
+              title={event.title}
+              emoji={event.emoji}
+              titleClassName="text-xs font-medium text-gray-800 sm:text-sm"
+            />
           </button>
         ))}
       </div>
@@ -223,9 +228,11 @@ function TimedEventBlock({
         backgroundColor: `${event.color}99`,
       }}
     >
-      <p className="truncate text-xs font-semibold text-gray-900 sm:text-sm">
-        {event.title}
-      </p>
+      <EmojiTitle
+        title={event.title}
+        emoji={event.emoji}
+        titleClassName="text-xs font-semibold text-gray-900 sm:text-sm"
+      />
       <p className="truncate text-[10px] text-gray-700 sm:text-xs">
         {event.startTime} – {event.endTime}
       </p>

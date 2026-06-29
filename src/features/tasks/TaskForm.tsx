@@ -6,6 +6,7 @@ import { useForm } from 'react-hook-form';
 import { v4 as uuidv4 } from 'uuid';
 import { z } from 'zod';
 import { Modal } from '../../components/Modal';
+import { EmojiPicker } from '../../components/EmojiPicker';
 import { db } from '../../db';
 import { useUIStore } from '../../store/uiStore';
 import { formatDateKey } from '../calendar/utils';
@@ -13,6 +14,7 @@ import { DEFAULT_TASK_COLOR, TASK_COLORS } from './constants';
 
 const taskSchema = z.object({
   title: z.string().min(1, 'Title is required'),
+  emoji: z.string().optional(),
   dueDate: z.string().optional(),
   notes: z.string().optional(),
   color: z.string().min(1),
@@ -44,6 +46,7 @@ export function TaskForm() {
     resolver: zodResolver(taskSchema),
     defaultValues: {
       title: '',
+      emoji: '',
       dueDate: formatDateKey(selectedDate),
       notes: '',
       color: DEFAULT_TASK_COLOR,
@@ -52,11 +55,13 @@ export function TaskForm() {
   });
 
   const selectedColor = watch('color');
+  const selectedEmoji = watch('emoji');
 
   useEffect(() => {
     if (isEditing && existingTask) {
       reset({
         title: existingTask.title,
+        emoji: existingTask.emoji ?? '',
         dueDate: existingTask.date ?? '',
         notes: existingTask.notes ?? '',
         color: existingTask.color || DEFAULT_TASK_COLOR,
@@ -68,6 +73,7 @@ export function TaskForm() {
     if (!isEditing) {
       reset({
         title: '',
+        emoji: '',
         dueDate: formatDateKey(selectedDate),
         notes: '',
         color: DEFAULT_TASK_COLOR,
@@ -80,6 +86,7 @@ export function TaskForm() {
     const now = new Date();
     const payload = {
       title: values.title,
+      emoji: values.emoji || undefined,
       date: values.dueDate || undefined,
       notes: values.notes || undefined,
       color: values.color,
@@ -117,11 +124,17 @@ export function TaskForm() {
           <label className="mb-1.5 block text-sm font-medium text-gray-700">
             Title
           </label>
-          <input
-            {...register('title')}
-            placeholder="Task title"
-            className="w-full rounded-xl border border-gray-200 px-3 py-2.5 text-sm outline-none transition focus:border-sky-300 focus:ring-2 focus:ring-sky-100"
-          />
+          <div className="flex min-w-0 gap-2">
+            <EmojiPicker
+              value={selectedEmoji ?? ''}
+              onChange={(emoji) => setValue('emoji', emoji)}
+            />
+            <input
+              {...register('title')}
+              placeholder="Task title"
+              className="min-w-0 flex-1 rounded-xl border border-gray-200 px-3 py-2.5 text-sm outline-none transition focus:border-sky-300 focus:ring-2 focus:ring-sky-100"
+            />
+          </div>
           {errors.title && (
             <p className="mt-1 text-xs text-rose-500">{errors.title.message}</p>
           )}

@@ -6,6 +6,7 @@ import { db } from '../../db';
 import { useUIStore } from '../../store/uiStore';
 import type { Task } from '../../types';
 import { DEFAULT_TASK_COLOR } from './constants';
+import { TaskTitle } from './TaskTitle';
 import {
   formatDueDate,
   getTaskColor,
@@ -161,14 +162,13 @@ function TaskRow({ task, section }: { task: Task; section: TaskSection }) {
               className="h-2.5 w-2.5 shrink-0 rounded-full"
               style={{ backgroundColor: color }}
             />
-            <span
-              className={clsx(
-                'truncate text-sm font-medium sm:text-base',
-                isCompleted ? 'text-gray-400 line-through' : 'text-gray-900',
-              )}
-            >
-              {task.title}
-            </span>
+            <TaskTitle
+              title={task.title}
+              emoji={task.emoji}
+              completed={isCompleted}
+              className="min-w-0 flex-1"
+              titleClassName="text-sm font-medium sm:text-base"
+            />
           </span>
           <span
             className={clsx(
