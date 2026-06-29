@@ -3,6 +3,7 @@ import { useLiveQuery } from 'dexie-react-hooks';
 import { Check, Plus } from 'lucide-react';
 import { useMemo } from 'react';
 import { db } from '../../db';
+import { themeClasses } from '../../constants/theme';
 import { useUIStore } from '../../store/uiStore';
 import type { Task } from '../../types';
 import { DEFAULT_TASK_COLOR } from './constants';
@@ -30,20 +31,20 @@ export function TasksView() {
   const isEmpty = (tasks ?? []).length === 0;
 
   return (
-    <div className="min-w-0 overflow-hidden rounded-2xl bg-white shadow-sm ring-1 ring-gray-100">
-      <div className="flex min-w-0 items-center justify-between gap-2 border-b border-gray-100 px-3 py-4 sm:px-6">
+    <div className={themeClasses.card}>
+      <div className={clsx('flex min-w-0 items-center justify-between gap-2 px-3 py-4 sm:px-6', themeClasses.cardHeader)}>
         <div className="min-w-0">
-          <h2 className="text-lg font-semibold text-gray-900 sm:text-xl">
+          <h2 className={clsx('text-lg sm:text-xl', themeClasses.heading)}>
             Tasks
           </h2>
-          <p className="mt-0.5 text-xs text-gray-500 sm:text-sm">
+          <p className="mt-0.5 text-xs text-muted sm:text-sm">
             {(tasks ?? []).filter((t) => !t.completed).length} active
           </p>
         </div>
         <button
           type="button"
           onClick={() => openTaskModal()}
-          className="inline-flex shrink-0 items-center gap-1.5 rounded-xl bg-sky-500 px-3 py-2 text-sm font-medium text-white transition hover:bg-sky-600"
+          className={clsx('inline-flex shrink-0 items-center gap-1.5', themeClasses.primaryBtnSm)}
         >
           <Plus size={18} />
           <span className="hidden sm:inline">Add task</span>
@@ -53,17 +54,17 @@ export function TasksView() {
 
       {isEmpty ? (
         <div className="px-6 py-16 text-center">
-          <p className="text-sm text-gray-500">No tasks yet.</p>
+          <p className="text-sm text-muted">No tasks yet.</p>
           <button
             type="button"
             onClick={() => openTaskModal()}
-            className="mt-3 text-sm font-medium text-sky-600 hover:text-sky-700"
+            className={clsx('mt-3 text-sm', themeClasses.linkBtn)}
           >
             Create your first task
           </button>
         </div>
       ) : (
-        <div className="divide-y divide-gray-100">
+        <div className="divide-y divide-border">
           {sections.map((section) => (
             <TaskSectionBlock
               key={section}
@@ -91,14 +92,14 @@ function TaskSectionBlock({
           className={clsx(
             'text-xs font-semibold uppercase tracking-wide sm:text-sm',
             section === 'overdue' && 'text-rose-500',
-            section === 'today' && 'text-sky-600',
-            section === 'upcoming' && 'text-gray-500',
-            section === 'completed' && 'text-gray-400',
+            section === 'today' && 'text-primary-strong',
+            section === 'upcoming' && 'text-muted',
+            section === 'completed' && 'text-muted/70',
           )}
         >
           {TASK_SECTION_LABELS[section]}
         </h3>
-        <span className="rounded-full bg-gray-100 px-2 py-0.5 text-[10px] font-medium text-gray-500 sm:text-xs">
+        <span className="rounded-full bg-surface-soft px-2 py-0.5 text-[10px] font-medium text-muted sm:text-xs">
           {tasks.length}
         </span>
       </div>
@@ -129,7 +130,7 @@ function TaskRow({ task, section }: { task: Task; section: TaskSection }) {
       <button
         type="button"
         onClick={() => openTaskModal(task.id)}
-        className="flex w-full items-start gap-3 rounded-xl border border-gray-100 bg-gray-50/50 p-3 text-left transition hover:bg-sky-50/50 sm:p-3.5"
+        className="flex w-full items-start gap-3 rounded-xl border border-border bg-surface-soft/50 p-3 text-left transition hover:bg-primary-soft/40 sm:p-3.5"
       >
         <span
           role="checkbox"
@@ -149,8 +150,8 @@ function TaskRow({ task, section }: { task: Task; section: TaskSection }) {
           className={clsx(
             'mt-0.5 flex h-5 w-5 shrink-0 items-center justify-center rounded-full border-2 transition',
             task.completed
-              ? 'border-sky-500 bg-sky-500 text-white'
-              : 'border-gray-300 bg-white hover:border-sky-400',
+              ? 'border-primary bg-primary text-white'
+              : 'border-border bg-surface hover:border-primary',
           )}
         >
           {task.completed && <Check size={12} strokeWidth={3} />}
@@ -173,13 +174,13 @@ function TaskRow({ task, section }: { task: Task; section: TaskSection }) {
           <span
             className={clsx(
               'mt-1 block text-xs sm:text-sm',
-              section === 'overdue' ? 'text-rose-500' : 'text-gray-500',
+              section === 'overdue' ? 'text-rose-500' : 'text-muted',
             )}
           >
             {formatDueDate(task.date)}
           </span>
           {task.notes && (
-            <span className="mt-1 block truncate text-xs text-gray-400">
+            <span className="mt-1 block truncate text-xs text-muted/80">
               {task.notes}
             </span>
           )}

@@ -1,7 +1,14 @@
 import { create } from 'zustand';
+import {
+  applyTheme,
+  getStoredTheme,
+  persistTheme,
+} from '../constants/theme';
+import type { AppTheme } from '../types/theme';
 import type { CalendarView } from '../types';
 
 interface UIState {
+  theme: AppTheme;
   selectedDate: Date;
   currentView: CalendarView;
   isEventModalOpen: boolean;
@@ -10,6 +17,7 @@ interface UIState {
   editingTaskId: string | null;
   suggestedStartTime: string | null;
   suggestedEndTime: string | null;
+  toggleTheme: () => void;
   setSelectedDate: (date: Date) => void;
   setCurrentView: (view: CalendarView) => void;
   openEventModal: (
@@ -24,6 +32,7 @@ interface UIState {
 }
 
 export const useUIStore = create<UIState>((set) => ({
+  theme: getStoredTheme(),
   selectedDate: new Date(),
   currentView: 'month',
   isEventModalOpen: false,
@@ -32,6 +41,14 @@ export const useUIStore = create<UIState>((set) => ({
   editingTaskId: null,
   suggestedStartTime: null,
   suggestedEndTime: null,
+
+  toggleTheme: () =>
+    set((state) => {
+      const theme: AppTheme = state.theme === 'day' ? 'night' : 'day';
+      applyTheme(theme);
+      persistTheme(theme);
+      return { theme };
+    }),
 
   setSelectedDate: (date) => set({ selectedDate: date }),
 

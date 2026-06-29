@@ -16,13 +16,13 @@ export function Modal({ title, onClose, children }: ModalProps) {
         aria-label="Close modal"
         onClick={onClose}
       />
-      <div className="relative z-10 max-h-[90svh] w-full min-w-0 max-w-md overflow-y-auto rounded-2xl bg-white p-5 shadow-xl sm:p-6">
+      <div className="relative z-10 max-h-[90svh] w-full min-w-0 max-w-md overflow-y-auto rounded-2xl bg-surface p-5 shadow-xl ring-1 ring-border sm:p-6">
         <div className="mb-5 flex items-center justify-between">
-          <h2 className="text-lg font-semibold text-gray-900">{title}</h2>
+          <h2 className="text-lg font-semibold text-foreground">{title}</h2>
           <button
             type="button"
             onClick={onClose}
-            className="rounded-full p-1.5 text-gray-400 transition hover:bg-gray-100 hover:text-gray-600"
+            className="rounded-full p-1.5 text-muted transition hover:bg-surface-soft hover:text-foreground"
             aria-label="Close"
           >
             <X size={20} />

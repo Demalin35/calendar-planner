@@ -1,10 +1,10 @@
 export const EVENT_COLORS = [
-  { id: 'sky', value: '#7CB9E8', label: 'Sky' },
-  { id: 'lavender', value: '#C4B5FD', label: 'Lavender' },
-  { id: 'rose', value: '#F9A8D4', label: 'Rose' },
-  { id: 'mint', value: '#86EFAC', label: 'Mint' },
-  { id: 'peach', value: '#FDBA74', label: 'Peach' },
-  { id: 'lemon', value: '#FDE047', label: 'Lemon' },
+  { id: 'blue', value: '#BFDBFE', label: 'Blue' },
+  { id: 'purple', value: '#DDD6FE', label: 'Purple' },
+  { id: 'pink', value: '#FBCFE8', label: 'Pink' },
+  { id: 'green', value: '#BBF7D0', label: 'Green' },
+  { id: 'yellow', value: '#FEF3C7', label: 'Yellow' },
+  { id: 'orange', value: '#FED7AA', label: 'Orange' },
 ] as const;
 
 export const DEFAULT_EVENT_COLOR = EVENT_COLORS[0].value;

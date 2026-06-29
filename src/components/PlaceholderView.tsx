@@ -1,3 +1,5 @@
+import { themeClasses } from '../constants/theme';
+
 interface PlaceholderViewProps {
   title: string;
   description: string;
@@ -5,9 +7,11 @@ interface PlaceholderViewProps {
 
 export function PlaceholderView({ title, description }: PlaceholderViewProps) {
   return (
-    <div className="flex flex-col items-center justify-center rounded-2xl bg-white px-6 py-16 text-center shadow-sm ring-1 ring-gray-100">
-      <h2 className="text-xl font-semibold text-gray-800">{title}</h2>
-      <p className="mt-2 max-w-sm text-sm text-gray-500">{description}</p>
+    <div
+      className={`flex flex-col items-center justify-center px-6 py-16 text-center ${themeClasses.card}`}
+    >
+      <h2 className="text-xl font-semibold text-foreground">{title}</h2>
+      <p className="mt-2 max-w-sm text-sm text-muted">{description}</p>
     </div>
   );
 }

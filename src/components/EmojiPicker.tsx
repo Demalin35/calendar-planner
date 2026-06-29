@@ -57,8 +57,8 @@ export function EmojiPicker({ value, onChange }: EmojiPickerProps) {
         className={clsx(
           'flex h-10 w-10 items-center justify-center rounded-xl border text-lg transition',
           open || value
-            ? 'border-sky-200 bg-sky-50 text-gray-900'
-            : 'border-gray-200 bg-gray-50 text-gray-400 hover:border-sky-200 hover:bg-sky-50/60',
+            ? 'border-selected-border bg-primary-soft text-foreground'
+            : 'border-border bg-surface-soft text-muted hover:border-selected-border hover:bg-primary-soft/60',
         )}
         aria-label={value ? `Selected emoji: ${value}` : 'Choose emoji'}
         aria-expanded={open}
@@ -71,14 +71,14 @@ export function EmojiPicker({ value, onChange }: EmojiPickerProps) {
       </button>
 
       {open && (
-        <div className="absolute left-0 top-full z-30 mt-1.5 w-[min(17rem,calc(100vw-2.5rem))] rounded-xl border border-gray-100 bg-white p-2.5 shadow-lg ring-1 ring-black/5">
+        <div className="absolute left-0 top-full z-30 mt-1.5 w-[min(17rem,calc(100vw-2.5rem))] rounded-xl border border-border bg-surface p-2.5 shadow-lg ring-1 ring-black/5">
           <div className="mb-2 flex items-center justify-between gap-2">
-            <span className="text-xs font-medium text-gray-500">Pick emoji</span>
+            <span className="text-xs font-medium text-muted">Pick emoji</span>
             {value && (
               <button
                 type="button"
                 onClick={clearEmoji}
-                className="text-xs font-medium text-gray-500 transition hover:text-gray-700"
+                className="text-xs font-medium text-muted transition hover:text-foreground"
               >
                 Clear
               </button>
@@ -93,8 +93,8 @@ export function EmojiPicker({ value, onChange }: EmojiPickerProps) {
                 className={clsx(
                   'flex h-8 w-8 items-center justify-center rounded-lg text-base transition',
                   value === emoji
-                    ? 'bg-sky-100 ring-2 ring-sky-300'
-                    : 'hover:bg-gray-100',
+                    ? 'bg-primary-soft ring-2 ring-selected-border'
+                    : 'hover:bg-surface-soft',
                 )}
                 aria-label={`Select ${emoji}`}
               >

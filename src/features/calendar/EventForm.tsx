@@ -7,6 +7,7 @@ import { v4 as uuidv4 } from 'uuid';
 import { z } from 'zod';
 import { Modal } from '../../components/Modal';
 import { EmojiPicker } from '../../components/EmojiPicker';
+import { themeClasses } from '../../constants/theme';
 import { db } from '../../db';
 import { useUIStore } from '../../store/uiStore';
 import { DEFAULT_EVENT_COLOR, EVENT_COLORS } from './constants';
@@ -133,7 +134,7 @@ export function EventForm() {
     <Modal title={isEditing ? 'Edit Event' : 'New Event'} onClose={closeEventModal}>
       <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
         <div>
-          <label className="mb-1.5 block text-sm font-medium text-gray-700">
+          <label className="mb-1.5 block text-sm font-medium text-foreground">
             Title
           </label>
           <div className="flex min-w-0 gap-2">
@@ -144,7 +145,7 @@ export function EventForm() {
             <input
               {...register('title')}
               placeholder="Event title"
-              className="min-w-0 flex-1 rounded-xl border border-gray-200 px-3 py-2.5 text-sm outline-none transition focus:border-sky-300 focus:ring-2 focus:ring-sky-100"
+              className={clsx('min-w-0 flex-1', themeClasses.input)}
             />
           </div>
           {errors.title && (
@@ -153,41 +154,41 @@ export function EventForm() {
         </div>
 
         <div>
-          <label className="mb-1.5 block text-sm font-medium text-gray-700">
+          <label className="mb-1.5 block text-sm font-medium text-foreground">
             Date
           </label>
           <input
             type="date"
             {...register('date')}
-            className="w-full rounded-xl border border-gray-200 px-3 py-2.5 text-sm outline-none transition focus:border-sky-300 focus:ring-2 focus:ring-sky-100"
+            className={clsx('w-full', themeClasses.input)}
           />
         </div>
 
         <div className="grid grid-cols-2 gap-3">
           <div>
-            <label className="mb-1.5 block text-sm font-medium text-gray-700">
+            <label className="mb-1.5 block text-sm font-medium text-foreground">
               Start
             </label>
             <input
               type="time"
               {...register('startTime')}
-              className="w-full rounded-xl border border-gray-200 px-3 py-2.5 text-sm outline-none transition focus:border-sky-300 focus:ring-2 focus:ring-sky-100"
+              className={clsx('w-full', themeClasses.input)}
             />
           </div>
           <div>
-            <label className="mb-1.5 block text-sm font-medium text-gray-700">
+            <label className="mb-1.5 block text-sm font-medium text-foreground">
               End
             </label>
             <input
               type="time"
               {...register('endTime')}
-              className="w-full rounded-xl border border-gray-200 px-3 py-2.5 text-sm outline-none transition focus:border-sky-300 focus:ring-2 focus:ring-sky-100"
+              className={clsx('w-full', themeClasses.input)}
             />
           </div>
         </div>
 
         <div>
-          <label className="mb-2 block text-sm font-medium text-gray-700">
+          <label className="mb-2 block text-sm font-medium text-foreground">
             Color
           </label>
           <div className="flex flex-wrap gap-2">
@@ -199,7 +200,7 @@ export function EventForm() {
                 className={clsx(
                   'h-8 w-8 rounded-full ring-2 ring-offset-2 transition',
                   selectedColor === color.value
-                    ? 'ring-gray-400'
+                    ? themeClasses.colorRingActive
                     : 'ring-transparent',
                 )}
                 style={{ backgroundColor: color.value }}
@@ -210,14 +211,14 @@ export function EventForm() {
         </div>
 
         <div>
-          <label className="mb-1.5 block text-sm font-medium text-gray-700">
+          <label className="mb-1.5 block text-sm font-medium text-foreground">
             Notes
           </label>
           <textarea
             {...register('notes')}
             rows={3}
             placeholder="Optional notes"
-            className="w-full resize-none rounded-xl border border-gray-200 px-3 py-2.5 text-sm outline-none transition focus:border-sky-300 focus:ring-2 focus:ring-sky-100"
+            className={clsx('w-full resize-none', themeClasses.input)}
           />
         </div>
 
@@ -234,14 +235,14 @@ export function EventForm() {
           <button
             type="button"
             onClick={closeEventModal}
-            className="rounded-xl border border-gray-200 px-4 py-2.5 text-sm font-medium text-gray-600 transition hover:bg-gray-50"
+            className="rounded-xl border border-border px-4 py-2.5 text-sm font-medium text-muted transition hover:bg-surface-soft"
           >
             Cancel
           </button>
           <button
             type="submit"
             disabled={isSubmitting}
-            className="ml-auto rounded-xl bg-sky-500 px-4 py-2.5 text-sm font-medium text-white transition hover:bg-sky-600 disabled:opacity-60"
+            className={clsx('ml-auto', themeClasses.primaryBtn)}
           >
             {isEditing ? 'Save' : 'Create'}
           </button>

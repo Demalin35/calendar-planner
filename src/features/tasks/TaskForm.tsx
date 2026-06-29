@@ -7,6 +7,7 @@ import { v4 as uuidv4 } from 'uuid';
 import { z } from 'zod';
 import { Modal } from '../../components/Modal';
 import { EmojiPicker } from '../../components/EmojiPicker';
+import { themeClasses } from '../../constants/theme';
 import { db } from '../../db';
 import { useUIStore } from '../../store/uiStore';
 import { formatDateKey } from '../calendar/utils';
@@ -121,7 +122,7 @@ export function TaskForm() {
     <Modal title={isEditing ? 'Edit Task' : 'New Task'} onClose={closeTaskModal}>
       <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
         <div>
-          <label className="mb-1.5 block text-sm font-medium text-gray-700">
+          <label className="mb-1.5 block text-sm font-medium text-foreground">
             Title
           </label>
           <div className="flex min-w-0 gap-2">
@@ -132,7 +133,7 @@ export function TaskForm() {
             <input
               {...register('title')}
               placeholder="Task title"
-              className="min-w-0 flex-1 rounded-xl border border-gray-200 px-3 py-2.5 text-sm outline-none transition focus:border-sky-300 focus:ring-2 focus:ring-sky-100"
+              className={clsx('min-w-0 flex-1', themeClasses.input)}
             />
           </div>
           {errors.title && (
@@ -141,18 +142,18 @@ export function TaskForm() {
         </div>
 
         <div>
-          <label className="mb-1.5 block text-sm font-medium text-gray-700">
+          <label className="mb-1.5 block text-sm font-medium text-foreground">
             Due date
           </label>
           <input
             type="date"
             {...register('dueDate')}
-            className="w-full rounded-xl border border-gray-200 px-3 py-2.5 text-sm outline-none transition focus:border-sky-300 focus:ring-2 focus:ring-sky-100"
+            className={clsx('w-full', themeClasses.input)}
           />
         </div>
 
         <div>
-          <label className="mb-2 block text-sm font-medium text-gray-700">
+          <label className="mb-2 block text-sm font-medium text-foreground">
             Color
           </label>
           <div className="flex flex-wrap gap-2">
@@ -164,7 +165,7 @@ export function TaskForm() {
                 className={clsx(
                   'h-8 w-8 rounded-full ring-2 ring-offset-2 transition',
                   selectedColor === color.value
-                    ? 'ring-gray-400'
+                    ? themeClasses.colorRingActive
                     : 'ring-transparent',
                 )}
                 style={{ backgroundColor: color.value }}
@@ -175,22 +176,22 @@ export function TaskForm() {
         </div>
 
         <div>
-          <label className="mb-1.5 block text-sm font-medium text-gray-700">
+          <label className="mb-1.5 block text-sm font-medium text-foreground">
             Notes
           </label>
           <textarea
             {...register('notes')}
             rows={3}
             placeholder="Optional notes"
-            className="w-full resize-none rounded-xl border border-gray-200 px-3 py-2.5 text-sm outline-none transition focus:border-sky-300 focus:ring-2 focus:ring-sky-100"
+            className={clsx('w-full resize-none', themeClasses.input)}
           />
         </div>
 
-        <label className="flex items-center gap-2 text-sm text-gray-700">
+        <label className="flex items-center gap-2 text-sm text-foreground">
           <input
             type="checkbox"
             {...register('completed')}
-            className="h-4 w-4 rounded border-gray-300 text-sky-500 focus:ring-sky-200"
+            className="h-4 w-4 rounded border-border text-primary focus:ring-primary-soft"
           />
           Mark as completed
         </label>
@@ -208,14 +209,14 @@ export function TaskForm() {
           <button
             type="button"
             onClick={closeTaskModal}
-            className="rounded-xl border border-gray-200 px-4 py-2.5 text-sm font-medium text-gray-600 transition hover:bg-gray-50"
+            className="rounded-xl border border-border px-4 py-2.5 text-sm font-medium text-muted transition hover:bg-surface-soft"
           >
             Cancel
           </button>
           <button
             type="submit"
             disabled={isSubmitting}
-            className="ml-auto rounded-xl bg-sky-500 px-4 py-2.5 text-sm font-medium text-white transition hover:bg-sky-600 disabled:opacity-60"
+            className={clsx('ml-auto', themeClasses.primaryBtn)}
           >
             {isEditing ? 'Save' : 'Create'}
           </button>

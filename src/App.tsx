@@ -1,4 +1,6 @@
 import { NavTabs } from './components/NavTabs';
+import { ThemeToggle } from './components/ThemeToggle';
+import { themeClasses } from './constants/theme';
 import { PlannerView } from './features/planner';
 import { TaskForm, TasksView } from './features/tasks';
 import { DayView } from './features/calendar/DayView';
@@ -12,15 +14,20 @@ function App() {
   const isTaskModalOpen = useUIStore((s) => s.isTaskModalOpen);
 
   return (
-    <div className="min-h-screen w-full overflow-x-hidden bg-gradient-to-b from-sky-50 to-white">
+    <div className={themeClasses.page}>
       <div className="mx-auto flex min-h-screen w-full min-w-0 max-w-5xl flex-col px-3 py-4 sm:px-6 sm:py-6">
         <header className="mb-4 min-w-0">
-          <h1 className="text-2xl font-semibold tracking-tight text-gray-900 sm:text-3xl">
-            Calendar
-          </h1>
-          <p className="mt-1 text-sm text-gray-500">
-            Your local planner — no account needed
-          </p>
+          <div className="flex items-start justify-between gap-3">
+            <div className="min-w-0">
+              <h1 className="text-2xl font-semibold tracking-tight text-foreground sm:text-3xl">
+                Calendar
+              </h1>
+              <p className="mt-1 text-sm text-muted">
+                Your local planner — no account needed
+              </p>
+            </div>
+            <ThemeToggle />
+          </div>
         </header>
 
         <NavTabs />

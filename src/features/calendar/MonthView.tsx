@@ -11,6 +11,7 @@ import { useLiveQuery } from 'dexie-react-hooks';
 import { ChevronLeft, ChevronRight } from 'lucide-react';
 import { useMemo } from 'react';
 import { EmojiTitle } from '../../components/EmojiTitle';
+import { themeClasses } from '../../constants/theme';
 import { db } from '../../db';
 import { useUIStore } from '../../store/uiStore';
 import type { CalendarEvent, Task } from '../../types';
@@ -83,10 +84,10 @@ export function MonthView() {
   const goToToday = () => setSelectedDate(new Date());
 
   return (
-    <div className="min-w-0 rounded-2xl bg-white shadow-sm ring-1 ring-gray-100">
-      <div className="flex min-w-0 items-center justify-between gap-2 border-b border-gray-100 px-3 py-4 sm:px-6">
+    <div className={themeClasses.card}>
+      <div className={clsx('flex min-w-0 items-center justify-between gap-2 px-3 py-4 sm:px-6', themeClasses.cardHeader)}>
         <div className="min-w-0">
-          <h2 className="truncate text-lg font-semibold text-gray-900 sm:text-xl">
+          <h2 className={clsx('truncate text-lg sm:text-xl', themeClasses.heading)}>
             {format(selectedDate, 'MMMM yyyy')}
           </h2>
         </div>
@@ -94,14 +95,14 @@ export function MonthView() {
           <button
             type="button"
             onClick={goToToday}
-            className="rounded-lg px-3 py-1.5 text-xs font-medium text-sky-600 transition hover:bg-sky-50 sm:text-sm"
+            className={clsx('rounded-lg px-3 py-1.5 text-xs sm:text-sm', themeClasses.linkBtn)}
           >
             Today
           </button>
           <button
             type="button"
             onClick={goToPreviousMonth}
-            className="rounded-lg p-2 text-gray-500 transition hover:bg-gray-100"
+            className={clsx('rounded-lg p-2', themeClasses.ghostBtn)}
             aria-label="Previous month"
           >
             <ChevronLeft size={20} />
@@ -109,7 +110,7 @@ export function MonthView() {
           <button
             type="button"
             onClick={goToNextMonth}
-            className="rounded-lg p-2 text-gray-500 transition hover:bg-gray-100"
+            className={clsx('rounded-lg p-2', themeClasses.ghostBtn)}
             aria-label="Next month"
           >
             <ChevronRight size={20} />
@@ -117,11 +118,11 @@ export function MonthView() {
         </div>
       </div>
 
-      <div className="grid min-w-0 grid-cols-7 border-b border-gray-100 bg-gray-50/80">
+      <div className="grid min-w-0 grid-cols-7 border-b border-border bg-surface-soft/80">
         {WEEKDAY_LABELS.map((label) => (
           <div
             key={label}
-            className="min-w-0 px-0.5 py-2 text-center text-[10px] font-semibold uppercase tracking-wide text-gray-400 sm:px-1 sm:text-xs"
+            className="min-w-0 px-0.5 py-2 text-center text-[10px] font-semibold uppercase tracking-wide text-muted sm:px-1 sm:text-xs"
           >
             <span className="hidden sm:inline">{label}</span>
             <span className="sm:hidden">{label.charAt(0)}</span>
@@ -177,23 +178,23 @@ function MonthDayCell({
   return (
     <div
       className={clsx(
-        'flex min-h-14 min-w-0 flex-col border-b border-r border-gray-100 p-0.5 sm:min-h-16 sm:p-1',
-        !inCurrentMonth && 'bg-gray-50/50',
-        isSelected && 'bg-sky-50 ring-1 ring-inset ring-sky-200',
+        'flex min-h-14 min-w-0 flex-col border-b border-r border-border p-0.5 sm:min-h-16 sm:p-1',
+        !inCurrentMonth && 'bg-surface-soft/50',
+        isSelected && themeClasses.selectedDay,
       )}
     >
       <button
         type="button"
         onClick={() => openEventModal(day)}
-        className="mb-0.5 inline-flex h-5 w-5 shrink-0 items-center justify-center rounded-full text-[11px] font-medium transition hover:bg-sky-100 sm:h-6 sm:w-6 sm:text-xs"
+        className="mb-0.5 inline-flex h-5 w-5 shrink-0 items-center justify-center rounded-full text-[11px] font-medium transition hover:bg-primary-soft sm:h-6 sm:w-6 sm:text-xs"
         aria-label={`Add event on ${format(day, 'MMMM d')}`}
       >
         <span
           className={clsx(
             'inline-flex h-full w-full items-center justify-center rounded-full',
-            isToday(day) && 'bg-sky-500 text-white',
-            !isToday(day) && inCurrentMonth && 'text-gray-800',
-            !isToday(day) && !inCurrentMonth && 'text-gray-300',
+            isToday(day) && themeClasses.todayCircle,
+            !isToday(day) && inCurrentMonth && 'text-foreground',
+            !isToday(day) && !inCurrentMonth && 'text-muted/50',
           )}
         >
           {format(day, 'd')}
@@ -242,7 +243,7 @@ function MonthEventBar({
         emoji={event.emoji}
         compact
         className="w-full"
-        titleClassName="text-[10px] font-medium text-gray-800 sm:text-xs"
+        titleClassName="text-[10px] font-medium text-foreground sm:text-xs"
       />
     </button>
   );
@@ -262,7 +263,7 @@ function MonthTaskBar({
         e.stopPropagation();
         onClick();
       }}
-      className="w-full min-w-0 overflow-hidden rounded border border-gray-200/80 bg-white/90 px-1 py-px text-left leading-tight transition hover:bg-gray-50 sm:rounded-md sm:px-1.5 sm:py-0.5"
+      className="w-full min-w-0 overflow-hidden rounded border border-border bg-surface px-1 py-px text-left leading-tight transition hover:bg-surface-soft sm:rounded-md sm:px-1.5 sm:py-0.5"
     >
       <EmojiTitle
         title={task.title}
@@ -270,7 +271,7 @@ function MonthTaskBar({
         completed={task.completed}
         compact
         className="w-full"
-        titleClassName="text-[10px] font-medium text-gray-700 sm:text-xs"
+        titleClassName="text-[10px] font-medium text-muted sm:text-xs"
       />
     </button>
   );

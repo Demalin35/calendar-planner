@@ -5,6 +5,7 @@ import { CalendarPlus, ChevronLeft, ChevronRight, ListPlus } from 'lucide-react'
 import { useMemo } from 'react';
 import { db } from '../../db';
 import { EmojiTitle } from '../../components/EmojiTitle';
+import { themeClasses } from '../../constants/theme';
 import { useUIStore } from '../../store/uiStore';
 import type { CalendarEvent, Task } from '../../types';
 import { WEEKDAY_LABELS } from '../calendar/constants';
@@ -73,13 +74,13 @@ export function PlannerView() {
   const goToThisWeek = () => setSelectedDate(new Date());
 
   return (
-    <div className="min-w-0 rounded-2xl bg-white shadow-sm ring-1 ring-gray-100">
-      <div className="flex min-w-0 flex-col gap-3 border-b border-gray-100 px-3 py-4 sm:flex-row sm:items-center sm:justify-between sm:px-4 lg:px-6">
+    <div className={themeClasses.card}>
+      <div className={clsx('flex min-w-0 flex-col gap-3 px-3 py-4 sm:flex-row sm:items-center sm:justify-between sm:px-4 lg:px-6', themeClasses.cardHeader)}>
         <div className="min-w-0">
-          <h2 className="text-lg font-semibold text-gray-900 sm:text-xl">
+          <h2 className={clsx('text-lg sm:text-xl', themeClasses.heading)}>
             Weekly Planner
           </h2>
-          <p className="mt-0.5 truncate text-xs text-gray-500 sm:text-sm">
+          <p className="mt-0.5 truncate text-xs text-muted sm:text-sm">
             {formatWeekRangeLabel(weekDays)}
           </p>
         </div>
@@ -87,14 +88,14 @@ export function PlannerView() {
           <button
             type="button"
             onClick={goToThisWeek}
-            className="rounded-lg px-2.5 py-1.5 text-xs font-medium text-sky-600 transition hover:bg-sky-50 sm:px-3 sm:text-sm"
+            className={clsx('rounded-lg px-2.5 py-1.5 text-xs sm:px-3 sm:text-sm', themeClasses.linkBtn)}
           >
             This week
           </button>
           <button
             type="button"
             onClick={goToPreviousWeek}
-            className="rounded-lg p-2 text-gray-500 transition hover:bg-gray-100"
+            className={clsx('rounded-lg p-2', themeClasses.ghostBtn)}
             aria-label="Previous week"
           >
             <ChevronLeft size={20} />
@@ -102,7 +103,7 @@ export function PlannerView() {
           <button
             type="button"
             onClick={goToNextWeek}
-            className="rounded-lg p-2 text-gray-500 transition hover:bg-gray-100"
+            className={clsx('rounded-lg p-2', themeClasses.ghostBtn)}
             aria-label="Next week"
           >
             <ChevronRight size={20} />
@@ -169,14 +170,14 @@ function PlannerDayColumn({
           ? 'flex min-h-0 flex-col p-2'
           : 'flex flex-col p-3',
         today
-          ? 'border-sky-300 bg-sky-50/80'
-          : 'border-gray-100 bg-gray-50/50',
+          ? 'border-selected-border bg-selected'
+          : 'border-border bg-surface-soft/50',
       )}
     >
-      <div className="min-w-0 border-b border-gray-100 pb-2">
+      <div className="min-w-0 border-b border-border pb-2">
         <p
           className={clsx(
-            'truncate font-semibold uppercase tracking-wide text-gray-400',
+            'truncate font-semibold uppercase tracking-wide text-muted',
             compact ? 'text-[9px] xl:text-[10px]' : 'text-xs',
           )}
         >
@@ -186,7 +187,7 @@ function PlannerDayColumn({
           className={clsx(
             'truncate font-semibold',
             compact ? 'text-xs lg:text-sm' : 'text-base',
-            today ? 'text-sky-600' : 'text-gray-900',
+            today ? 'text-primary-strong' : 'text-foreground',
           )}
         >
           {format(day, compact ? 'd' : 'MMM d, yyyy')}
@@ -202,7 +203,7 @@ function PlannerDayColumn({
         )}
       >
         {sortedEvents.length === 0 && tasks.length === 0 && (
-          <p className="py-1 text-center text-xs text-gray-400">Nothing planned</p>
+          <p className="py-1 text-center text-xs text-muted">Nothing planned</p>
         )}
 
         {sortedEvents.map((event) => (
@@ -217,12 +218,12 @@ function PlannerDayColumn({
               title={event.title}
               emoji={event.emoji}
               titleClassName={clsx(
-                'font-medium text-gray-900',
+                'font-medium text-foreground',
                 compact ? 'text-[10px] xl:text-xs' : 'text-sm',
               )}
             />
             {!compact && (
-              <p className="truncate text-xs text-gray-600">
+              <p className="truncate text-xs text-muted">
                 {event.startTime}
                 {event.endTime !== event.startTime ? ` – ${event.endTime}` : ''}
               </p>
@@ -233,7 +234,7 @@ function PlannerDayColumn({
         {tasks.length > 0 && (
           <div className="min-w-0 space-y-1.5">
             {sortedEvents.length > 0 && (
-              <p className="text-[10px] font-semibold uppercase tracking-wide text-gray-400">
+              <p className="text-[10px] font-semibold uppercase tracking-wide text-muted">
                 Tasks
               </p>
             )}
@@ -242,7 +243,7 @@ function PlannerDayColumn({
                 key={task.id}
                 type="button"
                 onClick={() => openTaskModal(task.id)}
-                className="flex w-full min-w-0 items-center gap-2 rounded-lg border border-gray-100 bg-white px-2 py-1.5 text-left transition hover:bg-gray-50"
+                className="flex w-full min-w-0 items-center gap-2 rounded-lg border border-border bg-surface px-2 py-1.5 text-left transition hover:bg-surface-soft"
               >
                 <span
                   className="h-2 w-2 shrink-0 rounded-full"
@@ -257,7 +258,7 @@ function PlannerDayColumn({
                   className="min-w-0 flex-1"
                   titleClassName={clsx(
                     compact ? 'text-[10px] xl:text-xs' : 'text-sm',
-                    !task.completed && 'text-gray-800',
+                    !task.completed && 'text-foreground',
                   )}
                 />
               </button>
@@ -268,7 +269,7 @@ function PlannerDayColumn({
 
       <div
         className={clsx(
-          'grid w-full min-w-0 gap-2 border-t border-gray-100 pt-3',
+          'grid w-full min-w-0 gap-2 border-t border-border pt-3',
           compact ? 'mt-auto grid-cols-1 gap-1 pt-2' : 'grid-cols-2',
         )}
       >
@@ -277,7 +278,7 @@ function PlannerDayColumn({
           onClick={() => openEventModal(day)}
           aria-label="Add event"
           className={clsx(
-            'flex w-full min-w-0 items-center justify-center gap-1.5 rounded-lg bg-white font-medium text-sky-600 ring-1 ring-gray-100 transition hover:bg-sky-50',
+            'flex w-full min-w-0 items-center justify-center gap-1.5 rounded-lg bg-surface font-medium text-primary-strong ring-1 ring-border transition hover:bg-primary-soft',
             compact ? 'px-1 py-1.5 text-[10px]' : 'px-2 py-2 text-xs',
           )}
         >
@@ -289,7 +290,7 @@ function PlannerDayColumn({
           onClick={() => openTaskModal(undefined, day)}
           aria-label="Add task"
           className={clsx(
-            'flex w-full min-w-0 items-center justify-center gap-1.5 rounded-lg bg-white font-medium text-violet-600 ring-1 ring-gray-100 transition hover:bg-violet-50',
+            'flex w-full min-w-0 items-center justify-center gap-1.5 rounded-lg bg-surface font-medium text-primary-strong ring-1 ring-border transition hover:bg-primary-soft',
             compact ? 'px-1 py-1.5 text-[10px]' : 'px-2 py-2 text-xs',
           )}
         >
