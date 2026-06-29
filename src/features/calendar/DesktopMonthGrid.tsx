@@ -173,6 +173,7 @@ function MonthDayCell({
   tasks: Task[];
   isSelected: boolean;
 }) {
+  const setSelectedDate = useUIStore((s) => s.setSelectedDate);
   const openEventModal = useUIStore((s) => s.openEventModal);
   const openTaskModal = useUIStore((s) => s.openTaskModal);
   const inCurrentMonth = isSameMonth(day, month);
@@ -182,19 +183,31 @@ function MonthDayCell({
     [events],
   );
 
+  const handleCreateEvent = () => {
+    setSelectedDate(day);
+    openEventModal(day);
+  };
+
   return (
     <div
+      role="button"
+      tabIndex={0}
+      onClick={handleCreateEvent}
+      onKeyDown={(event) => {
+        if (event.key === 'Enter' || event.key === ' ') {
+          event.preventDefault();
+          handleCreateEvent();
+        }
+      }}
+      aria-label={`Add event on ${format(day, 'MMMM d')}`}
       className={clsx(
-        'flex min-h-16 min-w-0 flex-col border-b border-r border-border p-1',
+        'flex min-h-16 min-w-0 cursor-pointer flex-col border-b border-r border-border p-1 transition hover:bg-primary-soft/40',
         !inCurrentMonth && 'bg-surface-soft/50',
         isSelected && themeClasses.selectedDay,
       )}
     >
-      <button
-        type="button"
-        onClick={() => openEventModal(day)}
-        className="mb-1 inline-flex h-6 w-6 shrink-0 items-center justify-center rounded-full text-xs font-medium transition hover:bg-primary-soft"
-        aria-label={`Add event on ${format(day, 'MMMM d')}`}
+      <span
+        className="mb-1 inline-flex h-6 w-6 shrink-0 items-center justify-center rounded-full text-xs font-medium"
       >
         <span
           className={clsx(
@@ -206,9 +219,9 @@ function MonthDayCell({
         >
           {format(day, 'd')}
         </span>
-      </button>
+      </span>
 
-      <div className="flex min-w-0 flex-col gap-0.5 pb-0.5">
+      <div className="flex min-h-0 min-w-0 flex-1 flex-col gap-0.5 pb-0.5">
         {sortedEvents.map((event) => (
           <MonthEventBar
             key={event.id}
