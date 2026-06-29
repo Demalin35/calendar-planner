@@ -19,7 +19,7 @@ interface UIState {
     endTime?: string,
   ) => void;
   closeEventModal: () => void;
-  openTaskModal: (taskId?: string) => void;
+  openTaskModal: (taskId?: string, date?: Date) => void;
   closeTaskModal: () => void;
 }
 
@@ -54,10 +54,11 @@ export const useUIStore = create<UIState>((set) => ({
       suggestedEndTime: null,
     }),
 
-  openTaskModal: (taskId) =>
+  openTaskModal: (taskId, date) =>
     set({
       isTaskModalOpen: true,
       editingTaskId: taskId ?? null,
+      ...(date && !taskId ? { selectedDate: date } : {}),
     }),
 
   closeTaskModal: () =>

@@ -16,7 +16,7 @@ export function Modal({ title, onClose, children }: ModalProps) {
         aria-label="Close modal"
         onClick={onClose}
       />
-      <div className="relative z-10 w-full max-w-md rounded-2xl bg-white p-5 shadow-xl sm:p-6">
+      <div className="relative z-10 max-h-[90svh] w-full min-w-0 max-w-md overflow-y-auto rounded-2xl bg-white p-5 shadow-xl sm:p-6">
         <div className="mb-5 flex items-center justify-between">
           <h2 className="text-lg font-semibold text-gray-900">{title}</h2>
           <button

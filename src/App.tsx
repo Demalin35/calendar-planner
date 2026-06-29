@@ -1,5 +1,5 @@
 import { NavTabs } from './components/NavTabs';
-import { PlaceholderView } from './components/PlaceholderView';
+import { PlannerView } from './features/planner';
 import { TaskForm, TasksView } from './features/tasks';
 import { DayView } from './features/calendar/DayView';
 import { EventForm } from './features/calendar/EventForm';
@@ -12,9 +12,9 @@ function App() {
   const isTaskModalOpen = useUIStore((s) => s.isTaskModalOpen);
 
   return (
-    <div className="min-h-screen bg-gradient-to-b from-sky-50 to-white">
-      <div className="mx-auto flex min-h-screen max-w-5xl flex-col px-4 py-4 sm:px-6 sm:py-6">
-        <header className="mb-4">
+    <div className="min-h-screen w-full overflow-x-hidden bg-gradient-to-b from-sky-50 to-white">
+      <div className="mx-auto flex min-h-screen w-full min-w-0 max-w-5xl flex-col px-3 py-4 sm:px-6 sm:py-6">
+        <header className="mb-4 min-w-0">
           <h1 className="text-2xl font-semibold tracking-tight text-gray-900 sm:text-3xl">
             Calendar
           </h1>
@@ -25,15 +25,10 @@ function App() {
 
         <NavTabs />
 
-        <main className="mt-4 flex-1">
+        <main className="mt-4 min-w-0 flex-1">
           {currentView === 'month' && <MonthView />}
           {currentView === 'day' && <DayView />}
-          {currentView === 'planner' && (
-            <PlaceholderView
-              title="Planner"
-              description="Weekly planning board coming soon."
-            />
-          )}
+          {currentView === 'planner' && <PlannerView />}
           {currentView === 'tasks' && <TasksView />}
         </main>
       </div>

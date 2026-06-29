@@ -54,14 +54,14 @@ export function MonthView() {
   const goToToday = () => setSelectedDate(new Date());
 
   return (
-    <div className="overflow-hidden rounded-2xl bg-white shadow-sm ring-1 ring-gray-100">
-      <div className="flex items-center justify-between border-b border-gray-100 px-4 py-4 sm:px-6">
-        <div>
-          <h2 className="text-lg font-semibold text-gray-900 sm:text-xl">
+    <div className="min-w-0 overflow-hidden rounded-2xl bg-white shadow-sm ring-1 ring-gray-100">
+      <div className="flex min-w-0 items-center justify-between gap-2 border-b border-gray-100 px-3 py-4 sm:px-6">
+        <div className="min-w-0">
+          <h2 className="truncate text-lg font-semibold text-gray-900 sm:text-xl">
             {format(selectedDate, 'MMMM yyyy')}
           </h2>
         </div>
-        <div className="flex items-center gap-1">
+        <div className="flex shrink-0 items-center gap-1">
           <button
             type="button"
             onClick={goToToday}
@@ -88,11 +88,11 @@ export function MonthView() {
         </div>
       </div>
 
-      <div className="grid grid-cols-7 border-b border-gray-100 bg-gray-50/80">
+      <div className="grid min-w-0 grid-cols-7 border-b border-gray-100 bg-gray-50/80">
         {WEEKDAY_LABELS.map((label) => (
           <div
             key={label}
-            className="px-1 py-2 text-center text-[10px] font-semibold uppercase tracking-wide text-gray-400 sm:text-xs"
+            className="min-w-0 px-0.5 py-2 text-center text-[10px] font-semibold uppercase tracking-wide text-gray-400 sm:px-1 sm:text-xs"
           >
             <span className="hidden sm:inline">{label}</span>
             <span className="sm:hidden">{label.charAt(0)}</span>
@@ -100,7 +100,7 @@ export function MonthView() {
         ))}
       </div>
 
-      <div className="grid grid-cols-7">
+      <div className="grid min-w-0 grid-cols-7">
         {gridDays.map((day) => {
           const dateKey = formatDateKey(day);
           const dayEvents = eventsByDate.get(dateKey) ?? [];
@@ -113,7 +113,7 @@ export function MonthView() {
               type="button"
               onClick={() => openEventModal(day)}
               className={clsx(
-                'group flex min-h-[72px] flex-col border-b border-r border-gray-100 p-1 text-left transition hover:bg-sky-50/50 sm:min-h-[100px] sm:p-2',
+                'group flex min-h-[72px] min-w-0 flex-col border-b border-r border-gray-100 p-0.5 text-left transition hover:bg-sky-50/50 sm:min-h-[100px] sm:p-1.5',
                 !inCurrentMonth && 'bg-gray-50/50',
                 isSelected && 'bg-sky-50 ring-1 ring-inset ring-sky-200',
               )}
@@ -129,7 +129,7 @@ export function MonthView() {
                 {format(day, 'd')}
               </span>
 
-              <div className="flex flex-1 flex-col gap-0.5 overflow-hidden">
+              <div className="flex min-w-0 flex-1 flex-col gap-0.5 overflow-hidden">
                 {dayEvents.slice(0, MAX_VISIBLE_EVENTS).map((event) => (
                   <EventPill
                     key={event.id}

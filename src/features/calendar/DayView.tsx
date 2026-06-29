@@ -61,11 +61,14 @@ export function DayView() {
   };
 
   return (
-    <div className="overflow-hidden rounded-2xl bg-white shadow-sm ring-1 ring-gray-100">
-      <div className="flex flex-col gap-3 border-b border-gray-100 px-4 py-4 sm:flex-row sm:items-center sm:justify-between sm:px-6">
-        <div>
-          <h2 className="text-lg font-semibold text-gray-900 sm:text-xl">
-            {format(selectedDate, 'EEEE, MMMM d, yyyy')}
+    <div className="min-w-0 overflow-hidden rounded-2xl bg-white shadow-sm ring-1 ring-gray-100">
+      <div className="flex min-w-0 flex-col gap-3 border-b border-gray-100 px-3 py-4 sm:flex-row sm:items-center sm:justify-between sm:px-6">
+        <div className="min-w-0">
+          <h2 className="text-base font-semibold leading-snug text-gray-900 sm:text-lg lg:text-xl">
+            <span className="sm:hidden">{format(selectedDate, 'EEE, MMM d')}</span>
+            <span className="hidden sm:inline">
+              {format(selectedDate, 'EEEE, MMMM d, yyyy')}
+            </span>
           </h2>
           {isToday(selectedDate) && (
             <p className="mt-0.5 text-xs font-medium text-sky-600 sm:text-sm">
@@ -73,7 +76,7 @@ export function DayView() {
             </p>
           )}
         </div>
-        <div className="flex items-center gap-1 self-start sm:self-auto">
+        <div className="flex shrink-0 items-center gap-1 self-start sm:self-auto">
           <button
             type="button"
             onClick={goToToday}

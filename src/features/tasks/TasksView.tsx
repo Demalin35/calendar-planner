@@ -29,9 +29,9 @@ export function TasksView() {
   const isEmpty = (tasks ?? []).length === 0;
 
   return (
-    <div className="overflow-hidden rounded-2xl bg-white shadow-sm ring-1 ring-gray-100">
-      <div className="flex items-center justify-between border-b border-gray-100 px-4 py-4 sm:px-6">
-        <div>
+    <div className="min-w-0 overflow-hidden rounded-2xl bg-white shadow-sm ring-1 ring-gray-100">
+      <div className="flex min-w-0 items-center justify-between gap-2 border-b border-gray-100 px-3 py-4 sm:px-6">
+        <div className="min-w-0">
           <h2 className="text-lg font-semibold text-gray-900 sm:text-xl">
             Tasks
           </h2>
@@ -42,7 +42,7 @@ export function TasksView() {
         <button
           type="button"
           onClick={() => openTaskModal()}
-          className="inline-flex items-center gap-1.5 rounded-xl bg-sky-500 px-3 py-2 text-sm font-medium text-white transition hover:bg-sky-600"
+          className="inline-flex shrink-0 items-center gap-1.5 rounded-xl bg-sky-500 px-3 py-2 text-sm font-medium text-white transition hover:bg-sky-600"
         >
           <Plus size={18} />
           <span className="hidden sm:inline">Add task</span>
