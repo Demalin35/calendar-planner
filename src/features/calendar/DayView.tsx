@@ -2,7 +2,7 @@ import clsx from 'clsx';
 import { addDays, format, isToday, subDays } from 'date-fns';
 import { useLiveQuery } from 'dexie-react-hooks';
 import { ChevronLeft, ChevronRight } from 'lucide-react';
-import { useMemo } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { EmojiTitle } from '../../components/EmojiTitle';
 import { PastelChip } from '../../components/PastelChip';
 import { themeClasses } from '../../constants/theme';
@@ -12,13 +12,15 @@ import type { CalendarEvent } from '../../types';
 import {
   DAY_START_HOUR,
   HOUR_HEIGHT_PX,
+  MIN_TIMED_EVENT_HEIGHT_DESKTOP,
+  MIN_TIMED_EVENT_HEIGHT_MOBILE,
 } from './constants';
+import { layoutDayViewTimedEvents } from './dayViewLayout';
 import {
   formatDateKey,
   formatHourLabel,
   formatHourSlotTime,
   getDayTimelineHours,
-  getEventTimelinePosition,
   getSuggestedEndTime,
   isAllDayEvent,
   isTimedEvent,
@@ -28,10 +30,36 @@ import {
 const timelineHours = getDayTimelineHours();
 const timelineHeight = timelineHours.length * HOUR_HEIGHT_PX;
 
+function useMinTimedEventHeight() {
+  const [minHeight, setMinHeight] = useState(() =>
+    typeof window !== 'undefined' &&
+    window.matchMedia('(min-width: 768px)').matches
+      ? MIN_TIMED_EVENT_HEIGHT_DESKTOP
+      : MIN_TIMED_EVENT_HEIGHT_MOBILE,
+  );
+
+  useEffect(() => {
+    const mediaQuery = window.matchMedia('(min-width: 768px)');
+    const update = () =>
+      setMinHeight(
+        mediaQuery.matches
+          ? MIN_TIMED_EVENT_HEIGHT_DESKTOP
+          : MIN_TIMED_EVENT_HEIGHT_MOBILE,
+      );
+
+    update();
+    mediaQuery.addEventListener('change', update);
+    return () => mediaQuery.removeEventListener('change', update);
+  }, []);
+
+  return minHeight;
+}
+
 export function DayView() {
   const selectedDate = useUIStore((s) => s.selectedDate);
   const setSelectedDate = useUIStore((s) => s.setSelectedDate);
   const openEventModal = useUIStore((s) => s.openEventModal);
+  const minEventHeight = useMinTimedEventHeight();
 
   const dateKey = formatDateKey(selectedDate);
 
@@ -48,6 +76,12 @@ export function DayView() {
       timedEvents: list.filter(isTimedEvent),
     };
   }, [events]);
+
+  const timedEventLayouts = useMemo(
+    () =>
+      layoutDayViewTimedEvents(timedEvents, HOUR_HEIGHT_PX, minEventHeight),
+    [timedEvents, minEventHeight],
+  );
 
   const goToPreviousDay = () => setSelectedDate(subDays(selectedDate, 1));
   const goToNextDay = () => setSelectedDate(addDays(selectedDate, 1));
@@ -149,20 +183,17 @@ export function DayView() {
           })}
 
           <div className="pointer-events-none absolute bottom-0 left-12 right-0 top-0 sm:left-16">
-            {timedEvents.map((event) => {
-              const position = getEventTimelinePosition(event, HOUR_HEIGHT_PX);
-              if (!position) return null;
-
-              return (
-                <TimedEventBlock
-                  key={event.id}
-                  event={event}
-                  top={position.top}
-                  height={position.height}
-                  onClick={() => openEventModal(selectedDate, event.id)}
-                />
-              );
-            })}
+            {timedEventLayouts.map((layout) => (
+              <TimedEventBlock
+                key={layout.event.id}
+                event={layout.event}
+                top={layout.top}
+                height={layout.height}
+                column={layout.column}
+                columnCount={layout.columnCount}
+                onClick={() => openEventModal(selectedDate, layout.event.id)}
+              />
+            ))}
           </div>
         </div>
       </div>
@@ -209,28 +240,46 @@ function TimedEventBlock({
   event,
   top,
   height,
+  column,
+  columnCount,
   onClick,
 }: {
   event: CalendarEvent;
   top: number;
   height: number;
+  column: number;
+  columnCount: number;
   onClick: () => void;
 }) {
+  const widthPercent = 100 / columnCount;
+  const leftPercent = column * widthPercent;
+  const horizontalGap = 4;
+
   return (
     <PastelChip
       color={event.color}
       onClick={onClick}
       className={clsx(
-        'pointer-events-auto absolute left-1 right-2 overflow-hidden rounded-lg border border-black/10 px-2 py-1 text-left shadow-sm sm:left-2 sm:right-3 sm:px-3 sm:py-1.5',
+        'pointer-events-auto absolute flex min-w-0 flex-col justify-start rounded-lg border border-black/10 px-2 py-1.5 text-left shadow-sm sm:px-2.5 sm:py-2',
       )}
-      style={{ top, height }}
+      style={{
+        top,
+        height,
+        left: `calc(${leftPercent}% + ${horizontalGap}px)`,
+        width: `calc(${widthPercent}% - ${horizontalGap * 2}px)`,
+      }}
     >
       <EmojiTitle
         title={event.title}
         emoji={event.emoji}
-        titleClassName="text-xs font-semibold sm:text-sm"
+        compact
+        className="min-w-0 shrink-0"
+        titleClassName="truncate text-[11px] font-semibold leading-tight sm:text-xs"
       />
-      <p className="truncate text-[10px] sm:text-xs" style={{ opacity: 0.85 }}>
+      <p
+        className="mt-0.5 shrink-0 truncate text-[10px] leading-tight sm:text-[11px]"
+        style={{ opacity: 0.85 }}
+      >
         {event.startTime} – {event.endTime}
       </p>
     </PastelChip>

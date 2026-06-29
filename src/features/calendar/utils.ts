@@ -138,7 +138,7 @@ export function getEventTimelinePosition(
   if (end <= dayStart || start >= dayEnd) return null;
 
   const top = ((start - dayStart) / 60) * hourHeight;
-  const height = Math.max(((end - start) / 60) * hourHeight, 28);
+  const height = ((end - start) / 60) * hourHeight;
 
   return { top, height };
 }

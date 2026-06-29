@@ -20,3 +20,6 @@ export const WEEKDAY_LABELS = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
 export const DAY_START_HOUR = 6;
 export const DAY_END_HOUR = 23;
 export const HOUR_HEIGHT_PX = 64;
+
+export const MIN_TIMED_EVENT_HEIGHT_DESKTOP = 56;
+export const MIN_TIMED_EVENT_HEIGHT_MOBILE = 68;
