@@ -1,7 +1,7 @@
 import { zodResolver } from '@hookform/resolvers/zod';
 import clsx from 'clsx';
 import { useLiveQuery } from 'dexie-react-hooks';
-import { useEffect } from 'react';
+import { useEffect, useMemo } from 'react';
 import { useForm } from 'react-hook-form';
 import { v4 as uuidv4 } from 'uuid';
 import { z } from 'zod';
@@ -12,6 +12,10 @@ import { themeClasses } from '../../constants/theme';
 import { db } from '../../db';
 import { useUIStore } from '../../store/uiStore';
 import { DEFAULT_EVENT_COLOR } from './constants';
+import {
+  hasEventTimeConflict,
+  isEventTimeRangeInvalid,
+} from './eventConflicts';
 import { formatDateKey } from './utils';
 
 const eventSchema = z.object({
@@ -62,6 +66,44 @@ export function EventForm() {
 
   const selectedColor = watch('color');
   const selectedEmoji = watch('emoji');
+  const watchedDate = watch('date');
+  const watchedStartTime = watch('startTime');
+  const watchedEndTime = watch('endTime');
+
+  const sameDayEvents = useLiveQuery(
+    () =>
+      db.events
+        .where('date')
+        .equals(watchedDate || formatDateKey(selectedDate))
+        .toArray(),
+    [watchedDate, selectedDate],
+    [],
+  );
+
+  const isInvalidTimeRange = useMemo(
+    () => isEventTimeRangeInvalid(watchedStartTime, watchedEndTime),
+    [watchedStartTime, watchedEndTime],
+  );
+
+  const hasTimeConflict = useMemo(
+    () =>
+      hasEventTimeConflict(
+        watchedDate,
+        watchedStartTime,
+        watchedEndTime,
+        sameDayEvents ?? [],
+        editingEventId,
+      ),
+    [
+      watchedDate,
+      watchedStartTime,
+      watchedEndTime,
+      sameDayEvents,
+      editingEventId,
+    ],
+  );
+
+  const timeFieldError = isInvalidTimeRange || hasTimeConflict;
 
   useEffect(() => {
     if (isEditing && existingEvent) {
@@ -98,6 +140,19 @@ export function EventForm() {
   ]);
 
   const onSubmit = async (values: EventFormValues) => {
+    if (
+      isEventTimeRangeInvalid(values.startTime, values.endTime) ||
+      hasEventTimeConflict(
+        values.date,
+        values.startTime,
+        values.endTime,
+        sameDayEvents ?? [],
+        editingEventId,
+      )
+    ) {
+      return;
+    }
+
     const now = new Date();
 
     if (isEditing && editingEventId) {
@@ -173,7 +228,11 @@ export function EventForm() {
             <input
               type="time"
               {...register('startTime')}
-              className={clsx('w-full', themeClasses.input)}
+              className={clsx(
+                'w-full',
+                themeClasses.input,
+                timeFieldError && 'border-rose-500 ring-1 ring-rose-500',
+              )}
             />
           </div>
           <div>
@@ -183,10 +242,26 @@ export function EventForm() {
             <input
               type="time"
               {...register('endTime')}
-              className={clsx('w-full', themeClasses.input)}
+              className={clsx(
+                'w-full',
+                themeClasses.input,
+                timeFieldError && 'border-rose-500 ring-1 ring-rose-500',
+              )}
             />
           </div>
         </div>
+
+        {isInvalidTimeRange && (
+          <p className="text-sm text-rose-600">
+            End time must be after start time.
+          </p>
+        )}
+        {!isInvalidTimeRange && hasTimeConflict && (
+          <p className="text-sm text-rose-600">
+            You already have something scheduled at this time. Please choose
+            another time.
+          </p>
+        )}
 
         <div>
           <label className="mb-2 block text-sm font-medium text-foreground">
@@ -231,7 +306,7 @@ export function EventForm() {
           </button>
           <button
             type="submit"
-            disabled={isSubmitting}
+            disabled={isSubmitting || timeFieldError}
             className={clsx('ml-auto', themeClasses.primaryBtn)}
           >
             {isEditing ? 'Save' : 'Create'}
