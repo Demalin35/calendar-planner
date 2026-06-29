@@ -1,1 +1,2 @@
-// Tasks feature — coming soon
+export { TaskForm } from './TaskForm';
+export { TasksView } from './TasksView';

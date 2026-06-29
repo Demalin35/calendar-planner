@@ -1,5 +1,6 @@
 import { NavTabs } from './components/NavTabs';
 import { PlaceholderView } from './components/PlaceholderView';
+import { TaskForm, TasksView } from './features/tasks';
 import { DayView } from './features/calendar/DayView';
 import { EventForm } from './features/calendar/EventForm';
 import { MonthView } from './features/calendar/MonthView';
@@ -8,6 +9,7 @@ import { useUIStore } from './store/uiStore';
 function App() {
   const currentView = useUIStore((s) => s.currentView);
   const isEventModalOpen = useUIStore((s) => s.isEventModalOpen);
+  const isTaskModalOpen = useUIStore((s) => s.isTaskModalOpen);
 
   return (
     <div className="min-h-screen bg-gradient-to-b from-sky-50 to-white">
@@ -32,16 +34,12 @@ function App() {
               description="Weekly planning board coming soon."
             />
           )}
-          {currentView === 'tasks' && (
-            <PlaceholderView
-              title="Tasks"
-              description="Task list with local storage coming soon."
-            />
-          )}
+          {currentView === 'tasks' && <TasksView />}
         </main>
       </div>
 
       {isEventModalOpen && <EventForm />}
+      {isTaskModalOpen && <TaskForm />}
     </div>
   );
 }

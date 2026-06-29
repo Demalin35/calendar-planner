@@ -16,6 +16,8 @@ export interface Task {
   id: string;
   title: string;
   date?: string;
+  notes?: string;
+  color: string;
   completed: boolean;
   createdAt: Date;
   updatedAt: Date;

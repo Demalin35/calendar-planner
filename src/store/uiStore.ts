@@ -6,6 +6,8 @@ interface UIState {
   currentView: CalendarView;
   isEventModalOpen: boolean;
   editingEventId: string | null;
+  isTaskModalOpen: boolean;
+  editingTaskId: string | null;
   suggestedStartTime: string | null;
   suggestedEndTime: string | null;
   setSelectedDate: (date: Date) => void;
@@ -17,6 +19,8 @@ interface UIState {
     endTime?: string,
   ) => void;
   closeEventModal: () => void;
+  openTaskModal: (taskId?: string) => void;
+  closeTaskModal: () => void;
 }
 
 export const useUIStore = create<UIState>((set) => ({
@@ -24,6 +28,8 @@ export const useUIStore = create<UIState>((set) => ({
   currentView: 'month',
   isEventModalOpen: false,
   editingEventId: null,
+  isTaskModalOpen: false,
+  editingTaskId: null,
   suggestedStartTime: null,
   suggestedEndTime: null,
 
@@ -47,4 +53,13 @@ export const useUIStore = create<UIState>((set) => ({
       suggestedStartTime: null,
       suggestedEndTime: null,
     }),
+
+  openTaskModal: (taskId) =>
+    set({
+      isTaskModalOpen: true,
+      editingTaskId: taskId ?? null,
+    }),
+
+  closeTaskModal: () =>
+    set({ isTaskModalOpen: false, editingTaskId: null }),
 }));
