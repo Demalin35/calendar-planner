@@ -188,7 +188,7 @@ export function EventForm() {
 
   return (
     <Modal title={isEditing ? 'Edit Event' : 'New Event'} onClose={closeEventModal}>
-      <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
+      <form onSubmit={handleSubmit(onSubmit)} className="min-w-0 space-y-4">
         <div>
           <label className="mb-1.5 block text-sm font-medium text-foreground">
             Title
@@ -267,7 +267,7 @@ export function EventForm() {
           <label className="mb-2 block text-sm font-medium text-foreground">
             Color
           </label>
-          <div className="flex flex-wrap gap-2">
+          <div className="min-w-0 overflow-hidden">
             <ColorSwatchPicker
               value={selectedColor}
               onChange={(color) => setValue('color', color)}
@@ -287,12 +287,12 @@ export function EventForm() {
           />
         </div>
 
-        <div className="flex gap-2 pt-2">
+        <div className="flex min-w-0 flex-col gap-2 pt-2 sm:flex-row sm:flex-wrap sm:items-center">
           {isEditing && (
             <button
               type="button"
               onClick={onDelete}
-              className="rounded-xl border border-rose-200 px-4 py-2.5 text-sm font-medium text-rose-600 transition hover:bg-rose-50"
+              className="w-full rounded-xl border border-rose-200 px-4 py-2.5 text-sm font-medium text-rose-600 transition hover:bg-rose-50 sm:w-auto"
             >
               Delete
             </button>
@@ -300,14 +300,14 @@ export function EventForm() {
           <button
             type="button"
             onClick={closeEventModal}
-            className="rounded-xl border border-border px-4 py-2.5 text-sm font-medium text-muted transition hover:bg-surface-soft"
+            className="w-full rounded-xl border border-border px-4 py-2.5 text-sm font-medium text-muted transition hover:bg-surface-soft sm:w-auto"
           >
             Cancel
           </button>
           <button
             type="submit"
             disabled={isSubmitting || timeFieldError}
-            className={clsx('ml-auto', themeClasses.primaryBtn)}
+            className={clsx('w-full sm:ml-auto sm:w-auto', themeClasses.primaryBtn)}
           >
             {isEditing ? 'Save' : 'Create'}
           </button>

@@ -15,7 +15,7 @@ export function ColorSwatchPicker({ value, onChange }: ColorSwatchPickerProps) {
   const normalizedValue = normalizeItemColor(value);
 
   return (
-    <div className="flex flex-wrap gap-2">
+    <div className="flex min-w-0 flex-wrap gap-2">
       {EVENT_COLORS.map((color) => {
         const isSelected = normalizedValue === color.value;
         const swatchStyle = getItemColorStyle(color.value, theme);

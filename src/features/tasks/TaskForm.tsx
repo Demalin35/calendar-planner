@@ -121,7 +121,7 @@ export function TaskForm() {
 
   return (
     <Modal title={isEditing ? 'Edit Task' : 'New Task'} onClose={closeTaskModal}>
-      <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
+      <form onSubmit={handleSubmit(onSubmit)} className="min-w-0 space-y-4">
         <div>
           <label className="mb-1.5 block text-sm font-medium text-foreground">
             Title
@@ -157,10 +157,12 @@ export function TaskForm() {
           <label className="mb-2 block text-sm font-medium text-foreground">
             Color
           </label>
-          <ColorSwatchPicker
-            value={selectedColor}
-            onChange={(color) => setValue('color', color)}
-          />
+          <div className="min-w-0 overflow-hidden">
+            <ColorSwatchPicker
+              value={selectedColor}
+              onChange={(color) => setValue('color', color)}
+            />
+          </div>
         </div>
 
         <div>
@@ -184,12 +186,12 @@ export function TaskForm() {
           Mark as completed
         </label>
 
-        <div className="flex gap-2 pt-2">
+        <div className="flex min-w-0 flex-col gap-2 pt-2 sm:flex-row sm:flex-wrap sm:items-center">
           {isEditing && (
             <button
               type="button"
               onClick={onDelete}
-              className="rounded-xl border border-rose-200 px-4 py-2.5 text-sm font-medium text-rose-600 transition hover:bg-rose-50"
+              className="w-full rounded-xl border border-rose-200 px-4 py-2.5 text-sm font-medium text-rose-600 transition hover:bg-rose-50 sm:w-auto"
             >
               Delete
             </button>
@@ -197,14 +199,14 @@ export function TaskForm() {
           <button
             type="button"
             onClick={closeTaskModal}
-            className="rounded-xl border border-border px-4 py-2.5 text-sm font-medium text-muted transition hover:bg-surface-soft"
+            className="w-full rounded-xl border border-border px-4 py-2.5 text-sm font-medium text-muted transition hover:bg-surface-soft sm:w-auto"
           >
             Cancel
           </button>
           <button
             type="submit"
             disabled={isSubmitting}
-            className={clsx('ml-auto', themeClasses.primaryBtn)}
+            className={clsx('w-full sm:ml-auto sm:w-auto', themeClasses.primaryBtn)}
           >
             {isEditing ? 'Save' : 'Create'}
           </button>

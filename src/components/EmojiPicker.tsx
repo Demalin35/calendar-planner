@@ -71,7 +71,7 @@ export function EmojiPicker({ value, onChange }: EmojiPickerProps) {
       </button>
 
       {open && (
-        <div className="absolute left-0 top-full z-30 mt-1.5 w-[min(17rem,calc(100vw-2.5rem))] rounded-xl border border-border bg-surface p-2.5 shadow-lg ring-1 ring-black/5">
+        <div className="absolute left-0 top-full z-30 mt-1.5 max-w-[calc(100vw-3rem)] rounded-xl border border-border bg-surface p-2.5 shadow-lg ring-1 ring-black/5 sm:w-[17rem]">
           <div className="mb-2 flex items-center justify-between gap-2">
             <span className="text-xs font-medium text-muted">Pick emoji</span>
             {value && (
