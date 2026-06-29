@@ -4,6 +4,7 @@ interface EmojiTitleProps {
   title: string;
   emoji?: string;
   completed?: boolean;
+  compact?: boolean;
   className?: string;
   titleClassName?: string;
 }
@@ -12,13 +13,26 @@ export function EmojiTitle({
   title,
   emoji,
   completed = false,
+  compact = false,
   className,
   titleClassName,
 }: EmojiTitleProps) {
   return (
-    <span className={clsx('flex min-w-0 items-center gap-1.5', className)}>
+    <span
+      className={clsx(
+        'flex min-w-0 items-center',
+        compact ? 'gap-0.5' : 'gap-1.5',
+        className,
+      )}
+    >
       {emoji && (
-        <span className="shrink-0 text-base leading-none" aria-hidden="true">
+        <span
+          className={clsx(
+            'shrink-0 leading-none',
+            compact ? 'text-[11px] sm:text-xs' : 'text-base',
+          )}
+          aria-hidden="true"
+        >
           {emoji}
         </span>
       )}

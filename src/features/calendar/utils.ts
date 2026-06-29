@@ -31,6 +31,14 @@ export function groupEventsByDate<T extends { date: string }>(
   return map;
 }
 
+export function chunkIntoWeeks(days: Date[]): Date[][] {
+  const weeks: Date[][] = [];
+  for (let i = 0; i < days.length; i += 7) {
+    weeks.push(days.slice(i, i + 7));
+  }
+  return weeks;
+}
+
 export function parseTimeToMinutes(time: string): number {
   const [hours, minutes] = time.split(':').map(Number);
   return hours * 60 + minutes;
