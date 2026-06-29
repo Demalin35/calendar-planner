@@ -7,11 +7,12 @@ import { v4 as uuidv4 } from 'uuid';
 import { z } from 'zod';
 import { Modal } from '../../components/Modal';
 import { EmojiPicker } from '../../components/EmojiPicker';
+import { ColorSwatchPicker } from '../../components/PastelChip';
 import { themeClasses } from '../../constants/theme';
 import { db } from '../../db';
 import { useUIStore } from '../../store/uiStore';
 import { formatDateKey } from '../calendar/utils';
-import { DEFAULT_TASK_COLOR, TASK_COLORS } from './constants';
+import { DEFAULT_TASK_COLOR } from './constants';
 
 const taskSchema = z.object({
   title: z.string().min(1, 'Title is required'),
@@ -156,23 +157,10 @@ export function TaskForm() {
           <label className="mb-2 block text-sm font-medium text-foreground">
             Color
           </label>
-          <div className="flex flex-wrap gap-2">
-            {TASK_COLORS.map((color) => (
-              <button
-                key={color.id}
-                type="button"
-                onClick={() => setValue('color', color.value)}
-                className={clsx(
-                  'h-8 w-8 rounded-full ring-2 ring-offset-2 transition',
-                  selectedColor === color.value
-                    ? themeClasses.colorRingActive
-                    : 'ring-transparent',
-                )}
-                style={{ backgroundColor: color.value }}
-                aria-label={color.label}
-              />
-            ))}
-          </div>
+          <ColorSwatchPicker
+            value={selectedColor}
+            onChange={(color) => setValue('color', color)}
+          />
         </div>
 
         <div>

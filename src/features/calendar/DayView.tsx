@@ -4,6 +4,7 @@ import { useLiveQuery } from 'dexie-react-hooks';
 import { ChevronLeft, ChevronRight } from 'lucide-react';
 import { useMemo } from 'react';
 import { EmojiTitle } from '../../components/EmojiTitle';
+import { PastelChip } from '../../components/PastelChip';
 import { themeClasses } from '../../constants/theme';
 import { db } from '../../db';
 import { useUIStore } from '../../store/uiStore';
@@ -186,19 +187,18 @@ function DayEventSection({
       </p>
       <div className="flex flex-wrap gap-2">
         {events.map((event) => (
-          <button
+          <PastelChip
             key={event.id}
-            type="button"
+            color={event.color}
             onClick={() => openEventModal(selectedDate, event.id)}
-            className="rounded-lg px-3 py-1.5 text-left text-xs font-medium text-foreground transition hover:opacity-80 sm:text-sm"
-            style={{ backgroundColor: `${event.color}66` }}
+            className="rounded-lg px-3 py-1.5 text-left text-xs font-medium sm:text-sm"
           >
             <EmojiTitle
               title={event.title}
               emoji={event.emoji}
-              titleClassName="text-xs font-medium text-foreground sm:text-sm"
+              titleClassName="text-xs font-medium sm:text-sm"
             />
-          </button>
+          </PastelChip>
         ))}
       </div>
     </div>
@@ -217,26 +217,22 @@ function TimedEventBlock({
   onClick: () => void;
 }) {
   return (
-    <button
-      type="button"
+    <PastelChip
+      color={event.color}
       onClick={onClick}
       className={clsx(
-        'pointer-events-auto absolute left-1 right-2 overflow-hidden rounded-lg border border-white/60 px-2 py-1 text-left shadow-sm transition hover:brightness-95 sm:left-2 sm:right-3 sm:px-3 sm:py-1.5',
+        'pointer-events-auto absolute left-1 right-2 overflow-hidden rounded-lg border border-black/10 px-2 py-1 text-left shadow-sm sm:left-2 sm:right-3 sm:px-3 sm:py-1.5',
       )}
-      style={{
-        top,
-        height,
-        backgroundColor: `${event.color}99`,
-      }}
+      style={{ top, height }}
     >
       <EmojiTitle
         title={event.title}
         emoji={event.emoji}
-        titleClassName="text-xs font-semibold text-foreground sm:text-sm"
+        titleClassName="text-xs font-semibold sm:text-sm"
       />
-      <p className="truncate text-[10px] text-muted sm:text-xs">
+      <p className="truncate text-[10px] sm:text-xs" style={{ opacity: 0.85 }}>
         {event.startTime} – {event.endTime}
       </p>
-    </button>
+    </PastelChip>
   );
 }

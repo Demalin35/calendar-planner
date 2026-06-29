@@ -76,6 +76,8 @@ export function formatDueDate(date?: string): string {
   return format(parseISO(date), 'MMM d, yyyy');
 }
 
+import { normalizeItemColor } from '../../utils/color';
+
 export function getTaskColor(task: Task, fallback: string): string {
-  return task.color || fallback;
+  return normalizeItemColor(task.color || fallback);
 }

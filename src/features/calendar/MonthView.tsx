@@ -11,10 +11,13 @@ import { useLiveQuery } from 'dexie-react-hooks';
 import { ChevronLeft, ChevronRight } from 'lucide-react';
 import { useMemo } from 'react';
 import { EmojiTitle } from '../../components/EmojiTitle';
+import { PastelChip } from '../../components/PastelChip';
 import { themeClasses } from '../../constants/theme';
 import { db } from '../../db';
 import { useUIStore } from '../../store/uiStore';
 import type { CalendarEvent, Task } from '../../types';
+import { DEFAULT_TASK_COLOR } from '../tasks/constants';
+import { getTaskColor } from '../tasks/utils';
 import { WEEKDAY_LABELS } from './constants';
 import {
   chunkIntoWeeks,
@@ -229,23 +232,22 @@ function MonthEventBar({
   onClick: () => void;
 }) {
   return (
-    <button
-      type="button"
+    <PastelChip
+      color={event.color}
       onClick={(e) => {
         e.stopPropagation();
         onClick();
       }}
-      className="w-full min-w-0 overflow-hidden rounded px-1 py-px text-left leading-tight transition hover:brightness-95 sm:rounded-md sm:px-1.5 sm:py-0.5"
-      style={{ backgroundColor: `${event.color}66` }}
+      className="w-full min-w-0 overflow-hidden rounded px-1 py-px text-left leading-tight sm:rounded-md sm:px-1.5 sm:py-0.5"
     >
       <EmojiTitle
         title={event.title}
         emoji={event.emoji}
         compact
         className="w-full"
-        titleClassName="text-[10px] font-medium text-foreground sm:text-xs"
+        titleClassName="text-[10px] font-medium sm:text-xs"
       />
-    </button>
+    </PastelChip>
   );
 }
 
@@ -256,14 +258,16 @@ function MonthTaskBar({
   task: Task;
   onClick: () => void;
 }) {
+  const color = getTaskColor(task, DEFAULT_TASK_COLOR);
+
   return (
-    <button
-      type="button"
+    <PastelChip
+      color={color}
       onClick={(e) => {
         e.stopPropagation();
         onClick();
       }}
-      className="w-full min-w-0 overflow-hidden rounded border border-border bg-surface px-1 py-px text-left leading-tight transition hover:bg-surface-soft sm:rounded-md sm:px-1.5 sm:py-0.5"
+      className="w-full min-w-0 overflow-hidden rounded px-1 py-px text-left leading-tight sm:rounded-md sm:px-1.5 sm:py-0.5"
     >
       <EmojiTitle
         title={task.title}
@@ -271,8 +275,11 @@ function MonthTaskBar({
         completed={task.completed}
         compact
         className="w-full"
-        titleClassName="text-[10px] font-medium text-muted sm:text-xs"
+        titleClassName={clsx(
+          'text-[10px] font-medium sm:text-xs',
+          task.completed && 'opacity-60',
+        )}
       />
-    </button>
+    </PastelChip>
   );
 }

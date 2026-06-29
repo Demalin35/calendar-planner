@@ -2,8 +2,9 @@ import clsx from 'clsx';
 import { useLiveQuery } from 'dexie-react-hooks';
 import { Check, Plus } from 'lucide-react';
 import { useMemo } from 'react';
-import { db } from '../../db';
+import { PastelChip } from '../../components/PastelChip';
 import { themeClasses } from '../../constants/theme';
+import { db } from '../../db';
 import { useUIStore } from '../../store/uiStore';
 import type { Task } from '../../types';
 import { DEFAULT_TASK_COLOR } from './constants';
@@ -127,10 +128,10 @@ function TaskRow({ task, section }: { task: Task; section: TaskSection }) {
 
   return (
     <li>
-      <button
-        type="button"
+      <PastelChip
+        color={color}
         onClick={() => openTaskModal(task.id)}
-        className="flex w-full items-start gap-3 rounded-xl border border-border bg-surface-soft/50 p-3 text-left transition hover:bg-primary-soft/40 sm:p-3.5"
+        className="flex w-full items-start gap-3 rounded-xl p-3 text-left sm:p-3.5"
       >
         <span
           role="checkbox"
@@ -148,44 +149,41 @@ function TaskRow({ task, section }: { task: Task; section: TaskSection }) {
             }
           }}
           className={clsx(
-            'mt-0.5 flex h-5 w-5 shrink-0 items-center justify-center rounded-full border-2 transition',
+            'mt-0.5 flex h-5 w-5 shrink-0 items-center justify-center rounded-full border-2 bg-surface transition',
             task.completed
-              ? 'border-primary bg-primary text-white'
-              : 'border-border bg-surface hover:border-primary',
+              ? 'border-primary-strong bg-primary-strong text-white'
+              : 'border-black/20 hover:border-primary-strong',
           )}
         >
           {task.completed && <Check size={12} strokeWidth={3} />}
         </span>
 
         <span className="min-w-0 flex-1">
-          <span className="flex items-center gap-2">
-            <span
-              className="h-2.5 w-2.5 shrink-0 rounded-full"
-              style={{ backgroundColor: color }}
-            />
-            <TaskTitle
-              title={task.title}
-              emoji={task.emoji}
-              completed={isCompleted}
-              className="min-w-0 flex-1"
-              titleClassName="text-sm font-medium sm:text-base"
-            />
-          </span>
+          <TaskTitle
+            title={task.title}
+            emoji={task.emoji}
+            completed={isCompleted}
+            className="min-w-0 flex-1"
+            titleClassName={clsx(
+              'text-sm font-medium sm:text-base',
+              isCompleted && 'opacity-60',
+            )}
+          />
           <span
             className={clsx(
               'mt-1 block text-xs sm:text-sm',
-              section === 'overdue' ? 'text-rose-500' : 'text-muted',
+              section === 'overdue' ? 'text-rose-700' : 'opacity-[0.85]',
             )}
           >
             {formatDueDate(task.date)}
           </span>
           {task.notes && (
-            <span className="mt-1 block truncate text-xs text-muted/80">
+            <span className="mt-1 block truncate text-xs opacity-75">
               {task.notes}
             </span>
           )}
         </span>
-      </button>
+      </PastelChip>
     </li>
   );
 }

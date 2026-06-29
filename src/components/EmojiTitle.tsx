@@ -39,7 +39,7 @@ export function EmojiTitle({
       <span
         className={clsx(
           'min-w-0 truncate',
-          completed && 'text-gray-400 line-through',
+          completed && 'opacity-60 line-through',
           titleClassName,
         )}
       >

@@ -5,6 +5,7 @@ import { CalendarPlus, ChevronLeft, ChevronRight, ListPlus } from 'lucide-react'
 import { useMemo } from 'react';
 import { db } from '../../db';
 import { EmojiTitle } from '../../components/EmojiTitle';
+import { PastelChip } from '../../components/PastelChip';
 import { themeClasses } from '../../constants/theme';
 import { useUIStore } from '../../store/uiStore';
 import type { CalendarEvent, Task } from '../../types';
@@ -207,28 +208,27 @@ function PlannerDayColumn({
         )}
 
         {sortedEvents.map((event) => (
-          <button
+          <PastelChip
             key={event.id}
-            type="button"
+            color={event.color}
             onClick={() => openEventModal(day, event.id)}
-            className="w-full min-w-0 rounded-lg px-2 py-1.5 text-left transition hover:opacity-80"
-            style={{ backgroundColor: `${event.color}66` }}
+            className="w-full min-w-0 rounded-lg px-2 py-1.5 text-left"
           >
             <EmojiTitle
               title={event.title}
               emoji={event.emoji}
               titleClassName={clsx(
-                'font-medium text-foreground',
+                'font-medium',
                 compact ? 'text-[10px] xl:text-xs' : 'text-sm',
               )}
             />
             {!compact && (
-              <p className="truncate text-xs text-muted">
+              <p className="truncate text-xs" style={{ opacity: 0.85 }}>
                 {event.startTime}
                 {event.endTime !== event.startTime ? ` – ${event.endTime}` : ''}
               </p>
             )}
-          </button>
+          </PastelChip>
         ))}
 
         {tasks.length > 0 && (
@@ -239,18 +239,12 @@ function PlannerDayColumn({
               </p>
             )}
             {tasks.map((task) => (
-              <button
+              <PastelChip
                 key={task.id}
-                type="button"
+                color={getTaskColor(task, DEFAULT_TASK_COLOR)}
                 onClick={() => openTaskModal(task.id)}
-                className="flex w-full min-w-0 items-center gap-2 rounded-lg border border-border bg-surface px-2 py-1.5 text-left transition hover:bg-surface-soft"
+                className="flex w-full min-w-0 items-center gap-2 rounded-lg px-2 py-1.5 text-left"
               >
-                <span
-                  className="h-2 w-2 shrink-0 rounded-full"
-                  style={{
-                    backgroundColor: getTaskColor(task, DEFAULT_TASK_COLOR),
-                  }}
-                />
                 <TaskTitle
                   title={task.title}
                   emoji={task.emoji}
@@ -258,10 +252,10 @@ function PlannerDayColumn({
                   className="min-w-0 flex-1"
                   titleClassName={clsx(
                     compact ? 'text-[10px] xl:text-xs' : 'text-sm',
-                    !task.completed && 'text-foreground',
+                    task.completed && 'opacity-60',
                   )}
                 />
-              </button>
+              </PastelChip>
             ))}
           </div>
         )}
