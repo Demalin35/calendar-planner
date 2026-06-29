@@ -17,6 +17,7 @@ interface UIState {
   editingTaskId: string | null;
   suggestedStartTime: string | null;
   suggestedEndTime: string | null;
+  isAssistantOpen: boolean;
   toggleTheme: () => void;
   setSelectedDate: (date: Date) => void;
   setCurrentView: (view: CalendarView) => void;
@@ -29,6 +30,8 @@ interface UIState {
   closeEventModal: () => void;
   openTaskModal: (taskId?: string, date?: Date) => void;
   closeTaskModal: () => void;
+  openAssistant: () => void;
+  closeAssistant: () => void;
 }
 
 export const useUIStore = create<UIState>((set) => ({
@@ -41,6 +44,7 @@ export const useUIStore = create<UIState>((set) => ({
   editingTaskId: null,
   suggestedStartTime: null,
   suggestedEndTime: null,
+  isAssistantOpen: false,
 
   toggleTheme: () =>
     set((state) => {
@@ -80,4 +84,8 @@ export const useUIStore = create<UIState>((set) => ({
 
   closeTaskModal: () =>
     set({ isTaskModalOpen: false, editingTaskId: null }),
+
+  openAssistant: () => set({ isAssistantOpen: true }),
+
+  closeAssistant: () => set({ isAssistantOpen: false }),
 }));

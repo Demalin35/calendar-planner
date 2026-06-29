@@ -1,3 +1,4 @@
+import { AIAssistantButton } from './features/assistant';
 import { NavTabs } from './components/NavTabs';
 import { ThemeToggle } from './components/ThemeToggle';
 import { themeClasses } from './constants/theme';
@@ -42,6 +43,7 @@ function App() {
 
       {isEventModalOpen && <EventForm />}
       {isTaskModalOpen && <TaskForm />}
+      <AIAssistantButton />
     </div>
   );
 }
