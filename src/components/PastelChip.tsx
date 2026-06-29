@@ -15,32 +15,36 @@ export function ColorSwatchPicker({ value, onChange }: ColorSwatchPickerProps) {
   const normalizedValue = normalizeItemColor(value);
 
   return (
-    <div className="flex min-w-0 flex-wrap gap-2">
+    <div className="flex min-w-0 flex-wrap gap-3 overflow-visible px-1 py-2">
       {EVENT_COLORS.map((color) => {
         const isSelected = normalizedValue === color.value;
         const swatchStyle = getItemColorStyle(color.value, theme);
 
         return (
-          <button
+          <div
             key={color.id}
-            type="button"
-            onClick={() => onChange(color.value)}
-            className={clsx(
-              'h-9 w-9 rounded-full border transition',
-              isSelected
-                ? clsx(
-                    themeClasses.colorRingActive,
-                    'scale-110 ring-2 ring-offset-2 ring-offset-surface',
-                  )
-                : 'hover:scale-105',
-            )}
-            style={{
-              backgroundColor: swatchStyle.backgroundColor,
-              borderColor: swatchStyle.borderColor,
-            }}
-            aria-label={color.label}
-            aria-pressed={isSelected}
-          />
+            className="flex h-11 w-11 shrink-0 items-center justify-center"
+          >
+            <button
+              type="button"
+              onClick={() => onChange(color.value)}
+              className={clsx(
+                'h-9 w-9 rounded-full border transition',
+                isSelected
+                  ? clsx(
+                      themeClasses.colorRingActive,
+                      'scale-110 ring-2 ring-offset-2 ring-offset-surface',
+                    )
+                  : 'hover:scale-105',
+              )}
+              style={{
+                backgroundColor: swatchStyle.backgroundColor,
+                borderColor: swatchStyle.borderColor,
+              }}
+              aria-label={color.label}
+              aria-pressed={isSelected}
+            />
+          </div>
         );
       })}
     </div>

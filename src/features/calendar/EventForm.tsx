@@ -193,17 +193,16 @@ export function EventForm() {
           <label className="mb-1.5 block text-sm font-medium text-foreground">
             Title
           </label>
-          <div className="flex min-w-0 gap-2">
-            <EmojiPicker
-              value={selectedEmoji ?? ''}
-              onChange={(emoji) => setValue('emoji', emoji)}
-            />
+          <EmojiPicker
+            value={selectedEmoji ?? ''}
+            onChange={(emoji) => setValue('emoji', emoji)}
+          >
             <input
               {...register('title')}
               placeholder="Event title"
               className={clsx('min-w-0 flex-1', themeClasses.input)}
             />
-          </div>
+          </EmojiPicker>
           {errors.title && (
             <p className="mt-1 text-xs text-rose-500">{errors.title.message}</p>
           )}
@@ -267,12 +266,10 @@ export function EventForm() {
           <label className="mb-2 block text-sm font-medium text-foreground">
             Color
           </label>
-          <div className="min-w-0 overflow-hidden">
-            <ColorSwatchPicker
-              value={selectedColor}
-              onChange={(color) => setValue('color', color)}
-            />
-          </div>
+          <ColorSwatchPicker
+            value={selectedColor}
+            onChange={(color) => setValue('color', color)}
+          />
         </div>
 
         <div>
