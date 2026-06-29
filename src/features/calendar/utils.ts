@@ -39,6 +39,47 @@ export function chunkIntoWeeks(days: Date[]): Date[][] {
   return weeks;
 }
 
+export function formatEventTimeLabel(event: CalendarEvent): string {
+  if (isAllDayEvent(event)) return 'All day';
+  if (isUntimedEvent(event)) return '';
+  if (event.endTime !== event.startTime) {
+    return `${event.startTime} – ${event.endTime}`;
+  }
+  return event.startTime;
+}
+
+export function formatCompactTime(time: string): string {
+  const [hours, minutes] = time.split(':').map(Number);
+  const period = hours >= 12 ? 'PM' : 'AM';
+  const hour12 = hours % 12 || 12;
+  if (minutes === 0) return `${hour12} ${period}`;
+  return `${hour12}:${String(minutes).padStart(2, '0')} ${period}`;
+}
+
+export function formatEventDuration(event: CalendarEvent): string {
+  if (isAllDayEvent(event) || isUntimedEvent(event)) return '';
+  const start = parseTimeToMinutes(event.startTime);
+  const end = parseTimeToMinutes(event.endTime);
+  if (end <= start) return '';
+
+  const mins = end - start;
+  if (mins < 60) return `${mins}m`;
+  if (mins % 60 === 0) return `${mins / 60}h`;
+  return `${Math.floor(mins / 60)}h ${mins % 60}m`;
+}
+
+export function getMobileEventTimeMeta(event: CalendarEvent): {
+  time: string;
+  duration: string;
+} {
+  if (isAllDayEvent(event)) return { time: 'All day', duration: '' };
+  if (isUntimedEvent(event)) return { time: '', duration: '' };
+
+  const time = formatCompactTime(event.startTime);
+  const duration = formatEventDuration(event);
+  return { time, duration };
+}
+
 export function parseTimeToMinutes(time: string): number {
   const [hours, minutes] = time.split(':').map(Number);
   return hours * 60 + minutes;
