@@ -10,15 +10,18 @@ import { themeClasses } from '../../constants/theme';
 import { db } from '../../db';
 import { useUIStore } from '../../store/uiStore';
 import type { ChatMessage, SuggestedItem } from './assistantTypes';
+import { t } from './assistantCopy';
+import type { AssistantLanguage } from './detectLanguage';
+import { getAssistantLanguage } from './detectLanguage';
 import { buildPlanningContext, generateMockPlan } from './mockAssistant';
 import { saveApprovedSuggestions } from './saveSuggestions';
 import { formatDateKey } from '../calendar/utils';
 
-function createWelcomeMessage(dateLabel: string): ChatMessage {
+function createWelcomeMessage(dateLabel: string, lang: AssistantLanguage): ChatMessage {
   return {
     id: uuidv4(),
     role: 'assistant',
-    content: `Hi! I can help you plan ${dateLabel}. Tell me what you need to get done, and I will suggest a schedule. Nothing gets added until you approve it.`,
+    content: t(lang, 'welcome', { date: dateLabel }),
   };
 }
 
@@ -29,9 +32,10 @@ export function AIAssistantPanel() {
   const dateLabel = format(selectedDate, 'EEEE, MMMM d, yyyy');
 
   const [messages, setMessages] = useState<ChatMessage[]>([
-    createWelcomeMessage(dateLabel),
+    createWelcomeMessage(dateLabel, 'en'),
   ]);
   const [input, setInput] = useState('');
+  const [responseLanguage, setResponseLanguage] = useState<AssistantLanguage>('en');
   const [isLoading, setIsLoading] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
@@ -63,7 +67,7 @@ export function AIAssistantPanel() {
   }, [messages, isLoading, activePlan]);
 
   useEffect(() => {
-    setMessages([createWelcomeMessage(dateLabel)]);
+    setMessages([createWelcomeMessage(dateLabel, responseLanguage)]);
     setInput('');
     setSelectedIds(new Set());
     setActivePlanMessageId(null);
@@ -72,6 +76,9 @@ export function AIAssistantPanel() {
   const handleSend = async () => {
     const trimmed = input.trim();
     if (!trimmed || isLoading) return;
+
+    const lang = getAssistantLanguage(trimmed);
+    setResponseLanguage(lang);
 
     const userMessage: ChatMessage = {
       id: uuidv4(),
@@ -138,7 +145,7 @@ export function AIAssistantPanel() {
       {
         id: uuidv4(),
         role: 'assistant',
-        content: 'No problem. Tell me if you want a different plan.',
+        content: t(responseLanguage, 'reject'),
       },
     ]);
   };
@@ -151,9 +158,9 @@ export function AIAssistantPanel() {
       const result = await saveApprovedSuggestions(items, existingEvents ?? []);
       const savedTotal = result.savedEvents + result.savedTasks;
 
-      let content = `Added ${savedTotal} item${savedTotal === 1 ? '' : 's'} to your calendar.`;
+      let content = t(responseLanguage, 'saved', { count: savedTotal });
       if (result.skipped > 0) {
-        content += ` Skipped ${result.skipped} conflicting item${result.skipped === 1 ? '' : 's'}.`;
+        content += t(responseLanguage, 'savedSkipped', { count: result.skipped });
       }
 
       setMessages((current) => [
@@ -271,6 +278,7 @@ export function AIAssistantPanel() {
                             <SuggestionPreviewCard
                               key={item.id}
                               item={item}
+                              lang={responseLanguage}
                               isSelected={selectedIds.has(item.id)}
                               isActivePlan={message.id === activePlanMessageId}
                               onToggle={() => toggleSuggestion(item.id)}
@@ -292,7 +300,7 @@ export function AIAssistantPanel() {
                               onClick={handleApproveAll}
                               className={clsx('w-full', themeClasses.primaryBtn)}
                             >
-                              Approve all
+                              {t(responseLanguage, 'approveAll')}
                             </button>
                             <button
                               type="button"
@@ -304,7 +312,7 @@ export function AIAssistantPanel() {
                                 'w-full rounded-xl border border-border px-4 py-2.5 text-sm font-medium text-foreground transition hover:bg-surface-soft disabled:opacity-60',
                               )}
                             >
-                              Add selected
+                              {t(responseLanguage, 'addSelected')}
                             </button>
                             <button
                               type="button"
@@ -312,7 +320,7 @@ export function AIAssistantPanel() {
                               onClick={clearActivePlan}
                               className="w-full rounded-xl px-4 py-2 text-sm font-medium text-muted transition hover:bg-surface-soft"
                             >
-                              Reject
+                              {t(responseLanguage, 'rejectButton')}
                             </button>
                           </div>
                         )}
@@ -326,7 +334,7 @@ export function AIAssistantPanel() {
               <div className="flex justify-start">
                 <div className="inline-flex items-center gap-2 rounded-2xl bg-surface-soft px-3 py-2 text-sm text-muted ring-1 ring-border">
                   <Loader2 size={16} className="animate-spin" />
-                  Thinking about your day...
+                  {t(responseLanguage, 'loading')}
                 </div>
               </div>
             )}
@@ -367,11 +375,13 @@ export function AIAssistantPanel() {
 
 function SuggestionPreviewCard({
   item,
+  lang,
   isSelected,
   isActivePlan,
   onToggle,
 }: {
   item: SuggestedItem;
+  lang: AssistantLanguage;
   isSelected: boolean;
   isActivePlan: boolean;
   onToggle: () => void;
@@ -407,7 +417,7 @@ function SuggestionPreviewCard({
               titleClassName="truncate text-sm font-semibold"
             />
             <span className="shrink-0 rounded-full bg-black/5 px-2 py-0.5 text-[10px] font-medium uppercase tracking-wide">
-              {item.type}
+              {t(lang, item.type === 'event' ? 'typeEvent' : 'typeTask')}
             </span>
           </div>
           <p className="mt-1 text-xs" style={{ opacity: 0.85 }}>

@@ -1,59 +1,119 @@
 import { addDays, format, parseISO } from 'date-fns';
+import { enUS, ru } from 'date-fns/locale';
 import { v4 as uuidv4 } from 'uuid';
 import type { CalendarEvent, Task } from '../../types';
 import { DEFAULT_EVENT_COLOR } from '../calendar/constants';
 import { hasEventTimeConflict } from '../calendar/eventConflicts';
 import { parseTimeToMinutes } from '../calendar/utils';
 import { DEFAULT_TASK_COLOR } from '../tasks/constants';
+import { t } from './assistantCopy';
+import type { AssistantLanguage } from './detectLanguage';
+import { getAssistantLanguage } from './detectLanguage';
 import type {
   AssistantPlanResponse,
   PlanningContext,
   SuggestedItem,
 } from './assistantTypes';
 
-const ACTIVITY_PATTERNS: Array<{
+interface ActivityPattern {
   keywords: string[];
-  title: string;
+  title: Record<AssistantLanguage, string>;
   emoji: string;
   type: 'event' | 'task';
   color: string;
   durationMinutes: number;
-}> = [
+}
+
+const ACTIVITY_PATTERNS: ActivityPattern[] = [
   {
-    keywords: ['study', 'studying', 'homework', 'read', 'learning'],
-    title: 'Study session',
+    keywords: [
+      'study',
+      'studying',
+      'homework',
+      'read',
+      'learning',
+      'учёба',
+      'учеба',
+      'занятия',
+      'учиться',
+      'домашн',
+      'читать',
+    ],
+    title: { en: 'Study session', ru: 'Занятие' },
     emoji: '📚',
     type: 'event',
     color: '#DCCFEA',
     durationMinutes: 60,
   },
   {
-    keywords: ['shop', 'shopping', 'groceries', 'errands', 'store'],
-    title: 'Shopping',
+    keywords: [
+      'shop',
+      'shopping',
+      'groceries',
+      'errands',
+      'store',
+      'покуп',
+      'магазин',
+      'продукт',
+      'поход',
+    ],
+    title: { en: 'Shopping', ru: 'Покупки' },
     emoji: '🛒',
     type: 'event',
     color: '#F4D6C8',
     durationMinutes: 60,
   },
   {
-    keywords: ['meeting', 'prepare', 'prep', 'presentation', 'call'],
-    title: 'Meeting prep',
+    keywords: [
+      'meeting',
+      'prepare',
+      'prep',
+      'presentation',
+      'call',
+      'встреч',
+      'подготов',
+      'созвон',
+      'презентац',
+    ],
+    title: { en: 'Meeting prep', ru: 'Подготовка к встрече' },
     emoji: '💼',
     type: 'event',
     color: '#D7EAF5',
     durationMinutes: 45,
   },
   {
-    keywords: ['workout', 'exercise', 'gym', 'run', 'walk'],
-    title: 'Workout',
+    keywords: [
+      'workout',
+      'exercise',
+      'gym',
+      'run',
+      'walk',
+      'трениров',
+      'спорт',
+      'зал',
+      'пробеж',
+      'прогул',
+    ],
+    title: { en: 'Workout', ru: 'Тренировка' },
     emoji: '🏃',
     type: 'event',
     color: '#CFE8CE',
     durationMinutes: 45,
   },
   {
-    keywords: ['email', 'admin', 'paperwork', 'organize', 'tidy'],
-    title: 'Admin time',
+    keywords: [
+      'email',
+      'admin',
+      'paperwork',
+      'organize',
+      'tidy',
+      'почт',
+      'дела',
+      'бумаг',
+      'убор',
+      'организ',
+    ],
+    title: { en: 'Admin time', ru: 'Дела по дому' },
     emoji: '📝',
     type: 'task',
     color: '#F7E7C6',
@@ -63,6 +123,12 @@ const ACTIVITY_PATTERNS: Array<{
 
 const DEFAULT_SLOT_START_HOUR = 9;
 const DEFAULT_SLOT_END_HOUR = 18;
+
+function formatPlanDate(date: string, lang: AssistantLanguage): string {
+  return format(parseISO(date), 'EEEE, d MMMM', {
+    locale: lang === 'ru' ? ru : enUS,
+  });
+}
 
 function minutesToTime(totalMinutes: number): string {
   const hours = Math.floor(totalMinutes / 60);
@@ -110,18 +176,34 @@ function findNextFreeSlot(
   return null;
 }
 
-function extractActivities(message: string): typeof ACTIVITY_PATTERNS {
+function extractActivities(
+  message: string,
+  lang: AssistantLanguage,
+): Array<{
+  title: string;
+  emoji: string;
+  type: 'event' | 'task';
+  color: string;
+  durationMinutes: number;
+}> {
   const lower = message.toLowerCase();
   const matched = ACTIVITY_PATTERNS.filter((pattern) =>
     pattern.keywords.some((keyword) => lower.includes(keyword)),
   );
 
   if (matched.length > 0) {
-    return matched.slice(0, 3);
+    return matched.slice(0, 3).map((pattern) => ({
+      title: pattern.title[lang],
+      emoji: pattern.emoji,
+      type: pattern.type,
+      color: pattern.color,
+      durationMinutes: pattern.durationMinutes,
+    }));
   }
 
+  const splitPattern = lang === 'ru' ? /,| and |&|\n| и /i : /,| and |&|\n/i;
   const fragments = lower
-    .split(/,| and |&|\n/)
+    .split(splitPattern)
     .map((part) => part.trim())
     .filter((part) => part.length > 2)
     .slice(0, 3);
@@ -129,16 +211,14 @@ function extractActivities(message: string): typeof ACTIVITY_PATTERNS {
   if (fragments.length === 0) {
     return [
       {
-        keywords: [],
-        title: 'Focused work block',
+        title: lang === 'ru' ? 'Блок сфокусированной работы' : 'Focused work block',
         emoji: '✨',
         type: 'event',
         color: DEFAULT_EVENT_COLOR,
         durationMinutes: 60,
       },
       {
-        keywords: [],
-        title: 'Personal errand',
+        title: lang === 'ru' ? 'Личное дело' : 'Personal errand',
         emoji: '📌',
         type: 'task',
         color: DEFAULT_TASK_COLOR,
@@ -148,7 +228,6 @@ function extractActivities(message: string): typeof ACTIVITY_PATTERNS {
   }
 
   return fragments.map((fragment, index) => ({
-    keywords: [],
     title: fragment.charAt(0).toUpperCase() + fragment.slice(1),
     emoji: index === 0 ? '✨' : '📌',
     type: index % 2 === 0 ? 'event' : 'task',
@@ -160,6 +239,7 @@ function extractActivities(message: string): typeof ACTIVITY_PATTERNS {
 function markConflicts(
   suggestions: SuggestedItem[],
   existingEvents: CalendarEvent[],
+  lang: AssistantLanguage,
 ): SuggestedItem[] {
   const savedEvents: CalendarEvent[] = [...existingEvents];
 
@@ -179,7 +259,7 @@ function markConflicts(
       return {
         ...item,
         hasConflict: true,
-        conflictReason: 'This time overlaps an existing event.',
+        conflictReason: t(lang, 'conflictReason'),
       };
     }
 
@@ -202,6 +282,7 @@ function markConflicts(
  * TODO: Replace this mock with a backend API call.
  * The real OpenAI integration should live on the server, e.g. POST /api/assistant/plan
  * with { message, date, events, tasks } and return structured suggestions.
+ * Pass `lang` to the API so responses match the user's language.
  */
 export async function generateMockPlan(
   userMessage: string,
@@ -211,7 +292,9 @@ export async function generateMockPlan(
 ): Promise<AssistantPlanResponse> {
   await new Promise((resolve) => setTimeout(resolve, 700));
 
-  const activities = extractActivities(userMessage);
+  const lang = getAssistantLanguage(userMessage);
+  const formattedDate = formatPlanDate(date, lang);
+  const activities = extractActivities(userMessage, lang);
   const occupied = getOccupiedRanges(existingEvents);
   const usedSlots: Array<{ start: number; end: number }> = [];
   const notes: string[] = [];
@@ -219,13 +302,13 @@ export async function generateMockPlan(
 
   if (existingEvents.length > 0) {
     notes.push(
-      `You already have ${existingEvents.length} event${existingEvents.length === 1 ? '' : 's'} on this day.`,
+      t(lang, 'existingEvents', { count: existingEvents.length }),
     );
   }
 
   if (existingTasks.length > 0) {
     notes.push(
-      `${existingTasks.length} task${existingTasks.length === 1 ? '' : 's'} due this day.`,
+      t(lang, 'existingTasks', { count: existingTasks.length }),
     );
   }
 
@@ -235,7 +318,7 @@ export async function generateMockPlan(
     if (!slot) {
       const alternateDate = format(addDays(parseISO(date), 1), 'yyyy-MM-dd');
       notes.push(
-        `Could not find open time for "${activity.title}" today. Consider moving it to ${alternateDate}.`,
+        t(lang, 'noSlotFor', { title: activity.title, date: alternateDate }),
       );
       continue;
     }
@@ -251,45 +334,40 @@ export async function generateMockPlan(
       endTime: minutesToTime(slot.end),
       color: activity.color,
       emoji: activity.emoji,
-      notes: `Suggested by your planning assistant.`,
+      notes: t(lang, 'suggestionNote'),
       hasConflict: false,
     });
   }
 
   if (rawSuggestions.length === 0) {
     const alternateDate = format(addDays(parseISO(date), 1), 'yyyy-MM-dd');
-    notes.push(
-      `Your schedule looks full today. I could not place new items without conflicts.`,
-    );
+    notes.push(t(lang, 'scheduleFull'));
 
     return {
-      summary:
-        'Your day is pretty packed. I could not find open slots for new items today.',
+      summary: t(lang, 'dayPacked'),
       notes,
       suggestions: [],
-      approvalPrompt: `Would you like to try planning for ${alternateDate} instead?`,
+      approvalPrompt: t(lang, 'tryAlternateDay', { date: alternateDate }),
     };
   }
 
-  const suggestions = markConflicts(rawSuggestions, existingEvents);
+  const suggestions = markConflicts(rawSuggestions, existingEvents, lang);
   const conflictCount = suggestions.filter((item) => item.hasConflict).length;
 
   if (conflictCount > 0) {
-    notes.push(
-      `${conflictCount} suggestion${conflictCount === 1 ? '' : 's'} overlap existing events and will not be added unless you adjust the time.`,
-    );
+    notes.push(t(lang, 'conflictOverlap', { count: conflictCount }));
   }
 
   const summary =
     suggestions.length === 1
-      ? `Here is one idea for ${format(parseISO(date), 'EEEE, MMMM d')}.`
-      : `Here is a draft plan with ${suggestions.length} items for ${format(parseISO(date), 'EEEE, MMMM d')}.`;
+      ? t(lang, 'summaryOne', { date: formattedDate })
+      : t(lang, 'summaryMany', { date: formattedDate, count: suggestions.length });
 
   return {
     summary,
     notes,
     suggestions,
-    approvalPrompt: 'Do you want me to add these to your calendar?',
+    approvalPrompt: t(lang, 'approvalPrompt'),
   };
 }
 
