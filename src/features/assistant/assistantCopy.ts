@@ -23,7 +23,9 @@ type CopyKey =
   | 'addSelected'
   | 'rejectButton'
   | 'typeEvent'
-  | 'typeTask';
+  | 'typeTask'
+  | 'timedSummary'
+  | 'timedApproval';
 
 const COPY: Record<AssistantLanguage, Record<CopyKey, string>> = {
   en: {
@@ -56,6 +58,8 @@ const COPY: Record<AssistantLanguage, Record<CopyKey, string>> = {
     rejectButton: 'Reject',
     typeEvent: 'event',
     typeTask: 'task',
+    timedSummary: "Sure — I can add '{title}' for today at {time}.",
+    timedApproval: 'Would you like me to add it?',
   },
   ru: {
     welcome:
@@ -87,6 +91,8 @@ const COPY: Record<AssistantLanguage, Record<CopyKey, string>> = {
     rejectButton: 'Отклонить',
     typeEvent: 'событие',
     typeTask: 'задача',
+    timedSummary: 'Конечно — могу добавить «{title}» на сегодня в {time}.',
+    timedApproval: 'Добавить?',
   },
 };
 

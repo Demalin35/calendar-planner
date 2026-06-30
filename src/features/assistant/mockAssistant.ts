@@ -9,6 +9,10 @@ import { DEFAULT_TASK_COLOR } from '../tasks/constants';
 import { t } from './assistantCopy';
 import type { AssistantLanguage } from './detectLanguage';
 import { getAssistantLanguage } from './detectLanguage';
+import {
+  extractTimeFromMessage,
+  stripTimeFromMessage,
+} from './extractTimeFromMessage';
 import type {
   AssistantPlanResponse,
   PlanningContext,
@@ -117,6 +121,21 @@ const ACTIVITY_PATTERNS: ActivityPattern[] = [
     emoji: '📝',
     type: 'task',
     color: '#F7E7C6',
+    durationMinutes: 30,
+  },
+  {
+    keywords: [
+      'call',
+      'remind',
+      'phone',
+      'позвон',
+      'напомни',
+      'звонок',
+    ],
+    title: { en: 'Phone call', ru: 'Звонок' },
+    emoji: '📞',
+    type: 'task',
+    color: '#E6DDF2',
     durationMinutes: 30,
   },
 ];
@@ -236,6 +255,97 @@ function extractActivities(
   }));
 }
 
+function extractCustomTitle(
+  message: string,
+  fallback: string,
+  matchedText: string | undefined,
+  lang: AssistantLanguage,
+): string {
+  let text = stripTimeFromMessage(message, matchedText);
+
+  const prefixPatterns =
+    lang === 'ru'
+      ? [
+          /^(?:я\s+)?хочу\s+(?:пойти\s+)?/i,
+          /^напомни(?:ть)?\s+(?:мне\s+)?/i,
+          /^мне\s+нужно\s+/i,
+        ]
+      : [
+          /^(?:i\s+)?want\s+to\s+/i,
+          /^remind\s+me\s+to\s+/i,
+          /^please\s+/i,
+        ];
+
+  for (const pattern of prefixPatterns) {
+    text = text.replace(pattern, '');
+  }
+
+  text = text
+    .replace(/\s+(?:today|сегодня|tomorrow|завтра)\s*$/i, '')
+    .replace(/[.!?]+$/g, '')
+    .trim();
+
+  if (text.length > 2) {
+    return text.charAt(0).toUpperCase() + text.slice(1);
+  }
+
+  return fallback;
+}
+
+function buildTimedSuggestion(
+  userMessage: string,
+  date: string,
+  existingEvents: CalendarEvent[],
+  lang: AssistantLanguage,
+): AssistantPlanResponse | null {
+  const extractedTime = extractTimeFromMessage(userMessage);
+  if (!extractedTime.time) return null;
+
+  const activities = extractActivities(userMessage, lang);
+  const primary = activities[0];
+  const title = extractCustomTitle(
+    userMessage,
+    primary.title,
+    extractedTime.matchedText,
+    lang,
+  );
+
+  const startMinutes = parseTimeToMinutes(extractedTime.time);
+  const endMinutes = Math.min(
+    startMinutes + primary.durationMinutes,
+    23 * 60 + 59,
+  );
+  const startTime = extractedTime.time;
+  const endTime = minutesToTime(endMinutes);
+
+  const rawSuggestion: SuggestedItem = {
+    id: uuidv4(),
+    type: primary.type,
+    title,
+    date,
+    startTime,
+    endTime,
+    color: primary.color,
+    emoji: primary.emoji,
+    notes: t(lang, 'suggestionNote'),
+    hasConflict: false,
+  };
+
+  const suggestions = markConflicts([rawSuggestion], existingEvents, lang);
+  const notes: string[] = [];
+
+  if (suggestions[0]?.hasConflict) {
+    notes.push(t(lang, 'conflictReason'));
+  }
+
+  return {
+    summary: t(lang, 'timedSummary', { title, time: startTime }),
+    notes,
+    suggestions,
+    approvalPrompt: t(lang, 'timedApproval'),
+  };
+}
+
 function markConflicts(
   suggestions: SuggestedItem[],
   existingEvents: CalendarEvent[],
@@ -294,6 +404,17 @@ export async function generateMockPlan(
 
   const lang = getAssistantLanguage(userMessage);
   const formattedDate = formatPlanDate(date, lang);
+
+  const timedPlan = buildTimedSuggestion(
+    userMessage,
+    date,
+    existingEvents,
+    lang,
+  );
+  if (timedPlan) {
+    return timedPlan;
+  }
+
   const activities = extractActivities(userMessage, lang);
   const occupied = getOccupiedRanges(existingEvents);
   const usedSlots: Array<{ start: number; end: number }> = [];
