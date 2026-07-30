@@ -25,7 +25,12 @@ type CopyKey =
   | 'typeEvent'
   | 'typeTask'
   | 'timedSummary'
-  | 'timedApproval';
+  | 'timedApproval'
+  | 'actionCreate'
+  | 'actionUpdate'
+  | 'actionDelete'
+  | 'applied'
+  | 'apiError';
 
 const COPY: Record<AssistantLanguage, Record<CopyKey, string>> = {
   en: {
@@ -60,6 +65,12 @@ const COPY: Record<AssistantLanguage, Record<CopyKey, string>> = {
     typeTask: 'task',
     timedSummary: "Sure — I can add '{title}' for today at {time}.",
     timedApproval: 'Would you like me to add it?',
+    actionCreate: 'add',
+    actionUpdate: 'move',
+    actionDelete: 'delete',
+    applied:
+      'Applied: {created} added, {updated} updated, {deleted} deleted.',
+    apiError: 'Assistant error: {message}',
   },
   ru: {
     welcome:
@@ -93,6 +104,12 @@ const COPY: Record<AssistantLanguage, Record<CopyKey, string>> = {
     typeTask: 'задача',
     timedSummary: 'Конечно — могу добавить «{title}» на сегодня в {time}.',
     timedApproval: 'Добавить?',
+    actionCreate: 'добавить',
+    actionUpdate: 'перенести',
+    actionDelete: 'удалить',
+    applied:
+      'Применено: добавлено {created}, обновлено {updated}, удалено {deleted}.',
+    apiError: 'Ошибка ассистента: {message}',
   },
 };
 

@@ -1,7 +1,9 @@
 export type SuggestionType = 'event' | 'task';
+export type SuggestionAction = 'create' | 'update' | 'delete';
 
 export interface SuggestedItem {
   id: string;
+  action?: SuggestionAction;
   type: SuggestionType;
   title: string;
   date: string;
@@ -10,6 +12,7 @@ export interface SuggestedItem {
   color: string;
   emoji?: string;
   notes?: string;
+  targetEventId?: string;
   hasConflict: boolean;
   conflictReason?: string;
 }
@@ -38,6 +41,8 @@ export interface PlanningContext {
 export interface SaveSuggestionsResult {
   savedEvents: number;
   savedTasks: number;
+  updatedEvents: number;
+  deletedEvents: number;
   skipped: number;
   skippedTitles: string[];
 }

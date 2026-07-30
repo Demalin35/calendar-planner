@@ -12,13 +12,76 @@ export async function saveApprovedSuggestions(
   const savedEvents: CalendarEvent[] = [...existingEvents];
   let savedEventCount = 0;
   let savedTaskCount = 0;
+  let updatedEvents = 0;
+  let deletedEvents = 0;
   let skipped = 0;
   const skippedTitles: string[] = [];
 
   for (const item of items) {
-    if (item.hasConflict) {
+    const action = item.action ?? 'create';
+
+    if (item.hasConflict && action !== 'delete') {
       skipped += 1;
       skippedTitles.push(item.title);
+      continue;
+    }
+
+    if (action === 'delete') {
+      if (!item.targetEventId) {
+        skipped += 1;
+        skippedTitles.push(item.title);
+        continue;
+      }
+      await db.events.delete(item.targetEventId);
+      const index = savedEvents.findIndex((event) => event.id === item.targetEventId);
+      if (index >= 0) savedEvents.splice(index, 1);
+      deletedEvents += 1;
+      continue;
+    }
+
+    if (action === 'update') {
+      if (!item.targetEventId) {
+        skipped += 1;
+        skippedTitles.push(item.title);
+        continue;
+      }
+
+      if (
+        hasEventTimeConflict(
+          item.date,
+          item.startTime,
+          item.endTime,
+          savedEvents,
+          item.targetEventId,
+        )
+      ) {
+        skipped += 1;
+        skippedTitles.push(item.title);
+        continue;
+      }
+
+      await db.events.update(item.targetEventId, {
+        title: item.title,
+        date: item.date,
+        startTime: item.startTime,
+        endTime: item.endTime,
+        notes: item.notes,
+        updatedAt: now,
+      });
+
+      const index = savedEvents.findIndex((event) => event.id === item.targetEventId);
+      if (index >= 0) {
+        savedEvents[index] = {
+          ...savedEvents[index],
+          title: item.title,
+          date: item.date,
+          startTime: item.startTime,
+          endTime: item.endTime,
+          notes: item.notes,
+          updatedAt: now,
+        };
+      }
+      updatedEvents += 1;
       continue;
     }
 
@@ -55,7 +118,10 @@ export async function saveApprovedSuggestions(
       continue;
     }
 
-    const taskNotes = [item.notes, `Suggested time: ${item.startTime} – ${item.endTime}`]
+    const taskNotes = [
+      item.notes,
+      `Suggested time: ${item.startTime} – ${item.endTime}`,
+    ]
       .filter(Boolean)
       .join('\n');
 
@@ -76,6 +142,8 @@ export async function saveApprovedSuggestions(
   return {
     savedEvents: savedEventCount,
     savedTasks: savedTaskCount,
+    updatedEvents,
+    deletedEvents,
     skipped,
     skippedTitles,
   };

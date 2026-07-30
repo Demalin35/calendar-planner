@@ -1,5 +1,5 @@
 import clsx from 'clsx';
-import { format } from 'date-fns';
+import { addDays, format, subDays } from 'date-fns';
 import { useLiveQuery } from 'dexie-react-hooks';
 import { Loader2, Send, Sparkles, X } from 'lucide-react';
 import { useEffect, useMemo, useRef, useState } from 'react';
@@ -10,10 +10,11 @@ import { themeClasses } from '../../constants/theme';
 import { db } from '../../db';
 import { useUIStore } from '../../store/uiStore';
 import type { ChatMessage, SuggestedItem } from './assistantTypes';
+import { requestAssistantPlan } from './assistantApi';
 import { t } from './assistantCopy';
 import type { AssistantLanguage } from './detectLanguage';
 import { getAssistantLanguage } from './detectLanguage';
-import { buildPlanningContext, generateMockPlan } from './mockAssistant';
+import { buildPlanningContext } from './mockAssistant';
 import { saveApprovedSuggestions } from './saveSuggestions';
 import { formatDateKey } from '../calendar/utils';
 
@@ -30,6 +31,8 @@ export function AIAssistantPanel() {
   const selectedDate = useUIStore((s) => s.selectedDate);
   const dateKey = formatDateKey(selectedDate);
   const dateLabel = format(selectedDate, 'EEEE, MMMM d, yyyy');
+  const rangeStart = formatDateKey(subDays(selectedDate, 7));
+  const rangeEnd = formatDateKey(addDays(selectedDate, 14));
 
   const [messages, setMessages] = useState<ChatMessage[]>([
     createWelcomeMessage(dateLabel, 'en'),
@@ -45,15 +48,33 @@ export function AIAssistantPanel() {
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
   const existingEvents = useLiveQuery(
-    () => db.events.where('date').equals(dateKey).toArray(),
-    [dateKey],
+    () =>
+      db.events
+        .where('date')
+        .between(rangeStart, rangeEnd, true, true)
+        .toArray(),
+    [rangeStart, rangeEnd],
     [],
   );
 
   const existingTasks = useLiveQuery(
-    () => db.tasks.where('date').equals(dateKey).toArray(),
-    [dateKey],
+    () =>
+      db.tasks
+        .where('date')
+        .between(rangeStart, rangeEnd, true, true)
+        .toArray(),
+    [rangeStart, rangeEnd],
     [],
+  );
+
+  const selectedDayEvents = useMemo(
+    () => (existingEvents ?? []).filter((event) => event.date === dateKey),
+    [existingEvents, dateKey],
+  );
+
+  const selectedDayTasks = useMemo(
+    () => (existingTasks ?? []).filter((task) => task.date === dateKey),
+    [existingTasks, dateKey],
   );
 
   const activePlan = useMemo(() => {
@@ -93,13 +114,13 @@ export function AIAssistantPanel() {
     setSelectedIds(new Set());
 
     try {
-      // TODO: Replace generateMockPlan with fetch('/api/assistant/plan', ...)
-      const plan = await generateMockPlan(
-        trimmed,
-        dateKey,
-        existingEvents ?? [],
-        existingTasks ?? [],
-      );
+      const plan = await requestAssistantPlan({
+        message: trimmed,
+        selectedDate: dateKey,
+        language: lang,
+        events: existingEvents ?? [],
+        tasks: existingTasks ?? [],
+      });
 
       const assistantMessage: ChatMessage = {
         id: uuidv4(),
@@ -115,11 +136,23 @@ export function AIAssistantPanel() {
         setSelectedIds(
           new Set(
             plan.suggestions
-              .filter((item) => !item.hasConflict)
+              .filter((item) => !item.hasConflict || item.action === 'delete')
               .map((item) => item.id),
           ),
         );
       }
+    } catch (error) {
+      setMessages((current) => [
+        ...current,
+        {
+          id: uuidv4(),
+          role: 'assistant',
+          content: t(lang, 'apiError', {
+            message:
+              error instanceof Error ? error.message : 'Unknown error',
+          }),
+        },
+      ]);
     } finally {
       setIsLoading(false);
     }
@@ -156,12 +189,18 @@ export function AIAssistantPanel() {
     setIsSaving(true);
     try {
       const result = await saveApprovedSuggestions(items, existingEvents ?? []);
-      const savedTotal = result.savedEvents + result.savedTasks;
-
-      let content = t(responseLanguage, 'saved', { count: savedTotal });
-      if (result.skipped > 0) {
-        content += t(responseLanguage, 'savedSkipped', { count: result.skipped });
-      }
+      const content = [
+        t(responseLanguage, 'applied', {
+          created: result.savedEvents + result.savedTasks,
+          updated: result.updatedEvents,
+          deleted: result.deletedEvents,
+        }),
+        result.skipped > 0
+          ? t(responseLanguage, 'savedSkipped', { count: result.skipped })
+          : '',
+      ]
+        .filter(Boolean)
+        .join('');
 
       setMessages((current) => [
         ...current,
@@ -180,22 +219,26 @@ export function AIAssistantPanel() {
 
   const handleApproveAll = async () => {
     if (!activePlan) return;
-    const items = activePlan.suggestions.filter((item) => !item.hasConflict);
+    const items = activePlan.suggestions.filter(
+      (item) => !item.hasConflict || item.action === 'delete',
+    );
     await handleSave(items);
   };
 
   const handleAddSelected = async () => {
     if (!activePlan) return;
     const items = activePlan.suggestions.filter(
-      (item) => selectedIds.has(item.id) && !item.hasConflict,
+      (item) =>
+        selectedIds.has(item.id) &&
+        (!item.hasConflict || item.action === 'delete'),
     );
     await handleSave(items);
   };
 
   const planningContext = buildPlanningContext(
     dateKey,
-    existingEvents ?? [],
-    existingTasks ?? [],
+    selectedDayEvents,
+    selectedDayTasks,
   );
 
   return (
@@ -262,7 +305,7 @@ export function AIAssistantPanel() {
                       : 'bg-surface-soft text-foreground ring-1 ring-border',
                   )}
                 >
-                  <p>{message.content}</p>
+                  <p className="whitespace-pre-wrap">{message.content}</p>
 
                   {message.plan && (
                     <div className="mt-3 space-y-3">
@@ -304,9 +347,7 @@ export function AIAssistantPanel() {
                             </button>
                             <button
                               type="button"
-                              disabled={
-                                isSaving || selectedIds.size === 0
-                              }
+                              disabled={isSaving || selectedIds.size === 0}
                               onClick={handleAddSelected}
                               className={clsx(
                                 'w-full rounded-xl border border-border px-4 py-2.5 text-sm font-medium text-foreground transition hover:bg-surface-soft disabled:opacity-60',
@@ -386,16 +427,25 @@ function SuggestionPreviewCard({
   isActivePlan: boolean;
   onToggle: () => void;
 }) {
+  const action = item.action ?? 'create';
+  const actionLabel =
+    action === 'delete'
+      ? t(lang, 'actionDelete')
+      : action === 'update'
+        ? t(lang, 'actionUpdate')
+        : t(lang, 'actionCreate');
+  const canSelect = !item.hasConflict || action === 'delete';
+
   return (
     <PastelChip
       color={item.color}
       type="button"
-      onClick={isActivePlan && !item.hasConflict ? onToggle : undefined}
+      onClick={isActivePlan && canSelect ? onToggle : undefined}
       className={clsx(
         'w-full rounded-xl px-3 py-2 text-left',
-        isActivePlan && !item.hasConflict && 'cursor-pointer',
+        isActivePlan && canSelect && 'cursor-pointer',
         isSelected && 'ring-2 ring-primary-strong',
-        item.hasConflict && 'opacity-70',
+        item.hasConflict && action !== 'delete' && 'opacity-70',
       )}
     >
       <div className="flex items-start gap-2">
@@ -403,7 +453,7 @@ function SuggestionPreviewCard({
           <input
             type="checkbox"
             checked={isSelected}
-            disabled={item.hasConflict}
+            disabled={!canSelect}
             onChange={onToggle}
             onClick={(event) => event.stopPropagation()}
             className="mt-1 h-4 w-4 shrink-0 rounded border-border text-primary focus:ring-primary-soft"
@@ -417,18 +467,18 @@ function SuggestionPreviewCard({
               titleClassName="truncate text-sm font-semibold"
             />
             <span className="shrink-0 rounded-full bg-black/5 px-2 py-0.5 text-[10px] font-medium uppercase tracking-wide">
-              {t(lang, item.type === 'event' ? 'typeEvent' : 'typeTask')}
+              {actionLabel} · {t(lang, item.type === 'event' ? 'typeEvent' : 'typeTask')}
             </span>
           </div>
           <p className="mt-1 text-xs" style={{ opacity: 0.85 }}>
-            {item.startTime} – {item.endTime}
+            {item.date} · {item.startTime} – {item.endTime}
           </p>
           {item.notes && (
             <p className="mt-1 truncate text-xs" style={{ opacity: 0.75 }}>
               {item.notes}
             </p>
           )}
-          {item.hasConflict && (
+          {item.hasConflict && action !== 'delete' && (
             <p className="mt-1 text-xs font-medium text-rose-600">
               {item.conflictReason}
             </p>
