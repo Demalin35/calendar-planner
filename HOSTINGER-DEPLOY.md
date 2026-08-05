@@ -16,15 +16,21 @@ Same domain:
 
 ## Exact Hostinger settings
 
+Hostinger **does not** expose a free-text install/build command. It runs `npm ci` automatically, then runs a **Build script** chosen from your `package.json` scripts.
+
 | Setting | Value |
 |---------|--------|
-| **Root directory** | `/` (repository root) |
-| **Node.js version** | `20` (or `22`) |
-| **Build command** | `npm ci && npm run build` |
-| **Start command** | `npm start` |
+| **Framework preset** | `Express` (or `Other`) |
+| **Root directory** | `./` (repository root) |
+| **Node.js version** | `20` or `22` |
+| **Package manager** | `npm` |
+| **Build script** | `build` |
+| **Output directory** | leave empty or `dist` (Express uses the entry file, not static output) |
+| **Entry file** | `server-dist/index.js` |
 
-Do **not** set root directory to `server/`.  
-Do **not** put `npm install` inside the start command.
+Do **not** set root directory to `server/`.
+
+**`tsc: command not found` fix:** Hostinger sets `NODE_ENV=production` during install, so plain `npm ci` skips devDependencies. This repo’s `.npmrc` sets `production=false` so `typescript` and `vite` are installed during the build. Push the latest commit before redeploying.
 
 ## Environment variables (Hostinger panel)
 
@@ -53,7 +59,7 @@ Hostinger provides `PORT` automatically — you usually do **not** set it.
 4. Connect the GitHub repository.  
 5. Set **root directory** to the repository root.  
 6. Select Node **20**.  
-7. Paste build/start commands from the table above.  
+7. Set **Build script** to `build` and **Entry file** to `server-dist/index.js`.  
 8. Add environment variables.  
 9. Deploy / rebuild.  
 10. Attach your domain to the Node.js app (Hostinger domain settings).  
@@ -88,7 +94,7 @@ Point your domain/subdomain to the Node.js Web App in Hostinger (not only to a s
 
 | Problem | What to check |
 |---------|----------------|
-| Build fails | Hostinger build logs; run `npm ci && npm run build` locally |
+| Build fails / `tsc: command not found` | Pull latest repo (`.npmrc` has `production=false`); confirm **Build script** = `build` |
 | App starts then exits | Runtime logs; confirm `OPENAI_API_KEY` and that `dist/index.html` was built |
 | Blank page | Open browser Network tab for JS/CSS 404s; confirm `npm run build` produced `dist/` |
 | `/api/health` HTML instead of JSON | Wrong start command or not running the Node app |
