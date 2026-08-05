@@ -36,18 +36,31 @@ function toDtoTask(task: Task) {
   };
 }
 
+function getApiBaseUrl(): string {
+  const configured = (
+    import.meta.env.VITE_ASSISTANT_API_BASE_URL as string | undefined
+  )?.replace(/\/$/, '');
+
+  if (configured) return configured;
+
+  // Local Vite dev uses the proxy (/api → localhost:3001).
+  // Production Hostinger is same-origin, so relative /api is correct.
+  return '';
+}
+
 /**
- * Calls the local server OpenAI endpoint.
- * Falls back to the mock planner only when the server is unreachable.
- * Conflict validation still happens on save.
+ * Calls the OpenAI-backed planning API on the same origin in production.
+ * Optional VITE_ASSISTANT_API_BASE_URL is only for split deployments.
+ * Falls back to mock planner only when the server is unreachable (local).
  */
 export async function requestAssistantPlan(
   request: PlanAssistantRequest,
 ): Promise<AssistantPlanResponse> {
+  const planUrl = `${getApiBaseUrl()}/api/assistant/plan`;
   let response: Response;
 
   try {
-    response = await fetch('/api/assistant/plan', {
+    response = await fetch(planUrl, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
@@ -59,15 +72,20 @@ export async function requestAssistantPlan(
       }),
     });
   } catch (error) {
-    console.warn(
-      '[assistant] Server unreachable — using mock planner:',
-      error instanceof Error ? error.message : error,
-    );
-    return generateMockPlan(
-      request.message,
-      request.selectedDate,
-      request.events,
-      request.tasks,
+    if (import.meta.env.DEV) {
+      console.warn(
+        '[assistant] Server unreachable — using mock planner:',
+        error instanceof Error ? error.message : error,
+      );
+      return generateMockPlan(
+        request.message,
+        request.selectedDate,
+        request.events,
+        request.tasks,
+      );
+    }
+    throw new Error(
+      error instanceof Error ? error.message : 'Assistant server unreachable',
     );
   }
 

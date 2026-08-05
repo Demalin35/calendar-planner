@@ -13,7 +13,8 @@ import type {
   PlanRequestBody,
 } from './types.js';
 
-const MAX_TOOL_ROUNDS = 8;
+const MAX_TOOL_ROUNDS = 6;
+const OPENAI_TIMEOUT_MS = 45_000;
 
 function buildInstructions(params: {
   selectedDate: string;
@@ -81,7 +82,11 @@ export async function runPlanningAssistant(
   const workDayEnd = process.env.WORK_DAY_END || '18:00';
   const language = body.language === 'ru' ? 'ru' : 'en';
 
-  const client = new OpenAI({ apiKey });
+  const client = new OpenAI({
+    apiKey,
+    timeout: OPENAI_TIMEOUT_MS,
+    maxRetries: 1,
+  });
   const context = createToolContext(
     body.events ?? [],
     body.tasks ?? [],
