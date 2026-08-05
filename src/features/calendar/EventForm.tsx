@@ -17,6 +17,8 @@ import {
   isEventTimeRangeInvalid,
 } from './eventConflicts';
 import { formatDateKey } from './utils';
+import { FrequentPresetsSection } from '../presets/FrequentPresetsSection';
+import { getFrequentEventPresets } from '../presets/frequentPresets';
 
 const eventSchema = z.object({
   title: z.string().min(1, 'Title is required'),
@@ -78,6 +80,17 @@ export function EventForm() {
         .toArray(),
     [watchedDate, selectedDate],
     [],
+  );
+
+  const allEvents = useLiveQuery(
+    () => (isEditing ? [] : db.events.toArray()),
+    [isEditing],
+    [],
+  );
+
+  const eventPresets = useMemo(
+    () => getFrequentEventPresets(allEvents ?? []),
+    [allEvents],
   );
 
   const isInvalidTimeRange = useMemo(
@@ -182,6 +195,17 @@ export function EventForm() {
     closeEventModal();
   };
 
+  const applyEventPreset = (index: number) => {
+    const preset = eventPresets[index];
+    if (!preset) return;
+
+    setValue('title', preset.title);
+    setValue('emoji', preset.emoji);
+    setValue('startTime', preset.startTime);
+    setValue('endTime', preset.endTime);
+    setValue('color', preset.color);
+  };
+
   if (isEditing && existingEvent === undefined) {
     return null;
   }
@@ -207,6 +231,13 @@ export function EventForm() {
             <p className="mt-1 text-xs text-rose-500">{errors.title.message}</p>
           )}
         </div>
+
+        {!isEditing && (
+          <FrequentPresetsSection
+            presets={eventPresets}
+            onSelect={applyEventPreset}
+          />
+        )}
 
         <div>
           <label className="mb-1.5 block text-sm font-medium text-foreground">

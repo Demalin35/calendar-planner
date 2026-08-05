@@ -1,7 +1,7 @@
 import { zodResolver } from '@hookform/resolvers/zod';
 import clsx from 'clsx';
 import { useLiveQuery } from 'dexie-react-hooks';
-import { useEffect } from 'react';
+import { useEffect, useMemo } from 'react';
 import { useForm } from 'react-hook-form';
 import { v4 as uuidv4 } from 'uuid';
 import { z } from 'zod';
@@ -13,6 +13,8 @@ import { db } from '../../db';
 import { useUIStore } from '../../store/uiStore';
 import { formatDateKey } from '../calendar/utils';
 import { DEFAULT_TASK_COLOR } from './constants';
+import { FrequentPresetsSection } from '../presets/FrequentPresetsSection';
+import { getFrequentTaskPresets } from '../presets/frequentPresets';
 
 const taskSchema = z.object({
   title: z.string().min(1, 'Title is required'),
@@ -58,6 +60,17 @@ export function TaskForm() {
 
   const selectedColor = watch('color');
   const selectedEmoji = watch('emoji');
+
+  const allTasks = useLiveQuery(
+    () => (isEditing ? [] : db.tasks.toArray()),
+    [isEditing],
+    [],
+  );
+
+  const taskPresets = useMemo(
+    () => getFrequentTaskPresets(allTasks ?? []),
+    [allTasks],
+  );
 
   useEffect(() => {
     if (isEditing && existingTask) {
@@ -115,6 +128,15 @@ export function TaskForm() {
     closeTaskModal();
   };
 
+  const applyTaskPreset = (index: number) => {
+    const preset = taskPresets[index];
+    if (!preset) return;
+
+    setValue('title', preset.title);
+    setValue('emoji', preset.emoji);
+    setValue('color', preset.color);
+  };
+
   if (isEditing && existingTask === undefined) {
     return null;
   }
@@ -140,6 +162,13 @@ export function TaskForm() {
             <p className="mt-1 text-xs text-rose-500">{errors.title.message}</p>
           )}
         </div>
+
+        {!isEditing && (
+          <FrequentPresetsSection
+            presets={taskPresets}
+            onSelect={applyTaskPreset}
+          />
+        )}
 
         <div>
           <label className="mb-1.5 block text-sm font-medium text-foreground">
