@@ -62,9 +62,11 @@ export function applyTheme(theme: AppTheme) {
 export function getStoredTheme(): AppTheme {
   try {
     const saved = localStorage.getItem(THEME_STORAGE_KEY);
-    return saved === 'night' ? 'night' : 'day';
+    if (saved === 'day') return 'day';
+    if (saved === 'night') return 'night';
+    return 'night';
   } catch {
-    return 'day';
+    return 'night';
   }
 }
 

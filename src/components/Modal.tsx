@@ -42,7 +42,7 @@ export function Modal({ title, onClose, children }: ModalProps) {
         role="dialog"
         aria-modal="true"
         className={clsx(
-          'relative z-10 box-border flex w-full min-w-0 flex-col overflow-x-hidden overflow-y-auto overscroll-contain',
+          'modal-scroll relative z-10 box-border flex w-full min-w-0 flex-col overflow-x-hidden overflow-y-auto overscroll-contain',
           'max-w-[calc(100vw-24px)] rounded-2xl bg-surface p-4 shadow-xl ring-1 ring-border',
           'max-h-[calc(100dvh-24px)] sm:max-h-[90svh] sm:max-w-md sm:p-6',
         )}
