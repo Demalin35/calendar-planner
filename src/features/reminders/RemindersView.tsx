@@ -6,7 +6,7 @@ import { EmojiTitle } from '../../components/EmojiTitle';
 import { themeClasses } from '../../constants/theme';
 import { useOnlineStatus } from '../../hooks/useOnlineStatus';
 import { useUIStore } from '../../store/uiStore';
-import { isIosSafari, isStandaloneMode } from '../../utils/pwa';
+import { isIosSafariBrowser } from '../../utils/pwa';
 import { formatDateKey } from '../calendar/utils';
 import { CompleteReminderDialog } from './CompleteReminderDialog';
 import { ReminderForm } from './ReminderForm';
@@ -98,12 +98,21 @@ export function RemindersView() {
     });
   };
 
+  useEffect(() => {
+    const refreshPermission = () => {
+      setNotificationState(getNotificationPermissionState());
+    };
+
+    refreshPermission();
+    document.addEventListener('visibilitychange', refreshPermission);
+    return () => {
+      document.removeEventListener('visibilitychange', refreshPermission);
+    };
+  }, []);
+
   const handleEnableNotifications = async () => {
-    if (isIosSafari() && !isStandaloneMode()) {
-      return;
-    }
     const next = await enableReminderNotifications();
-    setNotificationState(next);
+    setNotificationState(next.state);
   };
 
   const handleComplete = async (reminder: Reminder) => {
@@ -138,9 +147,21 @@ export function RemindersView() {
   };
 
   const showIosInstallHint =
-    isIosSafari() && !isStandaloneMode() && notificationState !== 'granted';
-  const showEnableNotifications =
-    notificationState !== 'granted' && !showIosInstallHint;
+    isIosSafariBrowser() && notificationState !== 'granted';
+  const showEnableButton =
+    !showIosInstallHint &&
+    notificationState !== 'granted' &&
+    notificationState !== 'denied' &&
+    notificationState !== 'unsupported' &&
+    notificationState !== 'misconfigured';
+  const showNotificationSection =
+    showIosInstallHint ||
+    notificationState === 'granted' ||
+    notificationState === 'denied' ||
+    notificationState === 'unsupported' ||
+    notificationState === 'misconfigured' ||
+    notificationState === 'error' ||
+    notificationState === 'default';
 
   return (
     <>
@@ -207,46 +228,70 @@ export function RemindersView() {
             </button>
           </div>
 
-          {showIosInstallHint && (
-            <p className="text-xs text-muted">{rt(lang, 'iosInstallForNotifications')}</p>
-          )}
-
-          {showEnableNotifications && (
+          {showNotificationSection && (
             <div className="rounded-xl border border-border bg-surface-soft px-3 py-3">
-              <div className="flex items-start gap-2">
-                <Bell size={16} className="mt-0.5 shrink-0 text-primary-strong" />
-                <div className="min-w-0 flex-1">
-                  <p className="text-sm font-medium text-foreground">
-                    {rt(lang, 'enableNotifications')}
-                  </p>
-                  <p className="mt-1 text-xs text-muted">
-                    {rt(lang, 'enableNotificationsHint')}
-                  </p>
-                  <button
-                    type="button"
-                    onClick={() => void handleEnableNotifications()}
-                    disabled={!isOnline || notificationState === 'unsupported'}
-                    className={clsx('mt-3', themeClasses.primaryBtnSm)}
-                  >
-                    {rt(lang, 'enableNotifications')}
-                  </button>
-                  {notificationState === 'denied' && (
-                    <p className="mt-2 text-xs text-rose-600">
-                      {rt(lang, 'notificationsDenied')}
+              {showIosInstallHint ? (
+                <p className="text-xs text-muted">
+                  {rt(lang, 'iosInstallForNotifications')}
+                </p>
+              ) : notificationState === 'granted' ? (
+                <p className="text-xs text-muted">{rt(lang, 'notificationsEnabled')}</p>
+              ) : (
+                <div className="flex items-start gap-2">
+                  <Bell size={16} className="mt-0.5 shrink-0 text-primary-strong" />
+                  <div className="min-w-0 flex-1">
+                    <p className="text-sm font-medium text-foreground">
+                      {rt(lang, 'enableNotifications')}
                     </p>
-                  )}
-                  {notificationState === 'unsupported' && (
-                    <p className="mt-2 text-xs text-muted">
-                      {rt(lang, 'notificationsUnsupported')}
+                    <p className="mt-1 text-xs text-muted">
+                      {rt(lang, 'enableNotificationsHint')}
                     </p>
-                  )}
-                </div>
-              </div>
-            </div>
-          )}
 
-          {notificationState === 'granted' && (
-            <p className="text-xs text-muted">{rt(lang, 'notificationsEnabled')}</p>
+                    {showEnableButton && (
+                      <button
+                        type="button"
+                        onClick={() => void handleEnableNotifications()}
+                        disabled={!isOnline}
+                        className={clsx('mt-3', themeClasses.primaryBtnSm)}
+                      >
+                        {rt(lang, 'enableNotifications')}
+                      </button>
+                    )}
+
+                    {notificationState === 'denied' && (
+                      <p className="mt-2 text-xs text-rose-600">
+                        {rt(lang, 'notificationsDenied')}
+                      </p>
+                    )}
+                    {notificationState === 'unsupported' && (
+                      <p className="mt-2 text-xs text-muted">
+                        {rt(lang, 'notificationsUnsupported')}
+                      </p>
+                    )}
+                    {notificationState === 'misconfigured' && (
+                      <p className="mt-2 text-xs text-rose-600">
+                        {rt(lang, 'notificationsMisconfigured')}
+                      </p>
+                    )}
+                    {notificationState === 'error' && (
+                      <div className="mt-2 space-y-2">
+                        <p className="text-xs text-rose-600">
+                          {rt(lang, 'notificationsEnableError')}
+                        </p>
+                        <button
+                          type="button"
+                          onClick={() => void handleEnableNotifications()}
+                          disabled={!isOnline}
+                          className={clsx(themeClasses.primaryBtnSm)}
+                        >
+                          {rt(lang, 'enableNotifications')}
+                        </button>
+                      </div>
+                    )}
+                  </div>
+                </div>
+              )}
+            </div>
           )}
         </div>
 

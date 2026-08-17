@@ -4,7 +4,7 @@ import { useEffect, useState } from 'react';
 import { Modal } from './Modal';
 import { themeClasses } from '../constants/theme';
 import { getPwaLanguage, pwaT } from '../features/pwa/pwaCopy';
-import { isIosSafari, isStandaloneMode } from '../utils/pwa';
+import { isIosSafariBrowser, isStandaloneMode } from '../utils/pwa';
 
 const installButtonClassName = clsx(
   'inline-flex shrink-0 items-center gap-1 rounded-xl border border-border bg-surface',
@@ -47,7 +47,7 @@ export function PwaInstallButton() {
 
   const canInstallOnChromium = installPrompt !== null;
   const canInstallOnIos =
-    isIosSafari() && !isStandaloneMode() && !canInstallOnChromium;
+    isIosSafariBrowser() && !isStandaloneMode() && !canInstallOnChromium;
   const showButton =
     !installed &&
     !isStandaloneMode() &&

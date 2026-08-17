@@ -21,6 +21,8 @@ type RemindersCopyKey =
   | 'notificationsEnabled'
   | 'notificationsDenied'
   | 'notificationsUnsupported'
+  | 'notificationsMisconfigured'
+  | 'notificationsEnableError'
   | 'iosInstallForNotifications'
   | 'offline'
   | 'saveError'
@@ -70,10 +72,14 @@ const COPY: Record<RemindersLanguage, Record<RemindersCopyKey, string>> = {
       'Allow Calendar Planner to notify you when important reminders are approaching.',
     notificationsEnabled: 'Notifications enabled',
     notificationsDenied:
-      'Notifications are blocked. Enable them in browser settings to receive reminders.',
+      'Notifications are blocked. Enable them for Calendar Planner in iPhone Settings.',
     notificationsUnsupported: 'Push notifications are not supported in this browser.',
+    notificationsMisconfigured:
+      'Reminder notifications are not available right now. The server push service is not configured.',
+    notificationsEnableError:
+      'Could not enable notifications. Please try again.',
     iosInstallForNotifications:
-      'Install Calendar Planner on your Home Screen to receive reminder notifications.',
+      'Install Calendar Planner to your Home Screen to enable notifications.',
     offline: 'You are offline. Reminder changes require an internet connection.',
     saveError: 'Could not save the reminder. Please try again.',
     loadError: 'Could not load reminders. Please try again.',
@@ -121,10 +127,14 @@ const COPY: Record<RemindersLanguage, Record<RemindersCopyKey, string>> = {
       'Разрешите Calendar Planner отправлять уведомления о важных напоминаниях.',
     notificationsEnabled: 'Уведомления включены',
     notificationsDenied:
-      'Уведомления заблокированы. Включите их в настройках браузера.',
+      'Уведомления заблокированы. Включите их для Calendar Planner в настройках iPhone.',
     notificationsUnsupported: 'Push-уведомления не поддерживаются в этом браузере.',
+    notificationsMisconfigured:
+      'Уведомления сейчас недоступны — push-сервис на сервере не настроен.',
+    notificationsEnableError:
+      'Не удалось включить уведомления. Попробуйте снова.',
     iosInstallForNotifications:
-      'Установите Calendar Planner на экран «Домой», чтобы получать уведомления.',
+      'Установите Calendar Planner на экран «Домой», чтобы включить уведомления.',
     offline: 'Нет сети. Для напоминаний нужно подключение к интернету.',
     saveError: 'Не удалось сохранить напоминание. Попробуйте снова.',
     loadError: 'Не удалось загрузить напоминания. Попробуйте снова.',

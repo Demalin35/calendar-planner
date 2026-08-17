@@ -1,45 +1,79 @@
+import { isIosDevice, isStandaloneMode } from '../../utils/pwa';
 import { fetchVapidPublicKey, subscribePushApi } from './remindersApi';
 
 export type NotificationPermissionState =
   | 'unsupported'
   | 'default'
   | 'granted'
-  | 'denied';
+  | 'denied'
+  | 'misconfigured'
+  | 'error';
+
+export type PushEnableResult = {
+  state: NotificationPermissionState;
+};
+
+/**
+ * Web Push is available when Notifications + service workers exist.
+ * On iOS 16.4+ Home Screen PWAs, PushManager may only exist on the SW registration.
+ */
+export function isPushApiAvailable(): boolean {
+  if (typeof window === 'undefined') return false;
+  if (!('Notification' in window)) return false;
+  if (!('serviceWorker' in window.navigator)) return false;
+
+  if ('PushManager' in window) return true;
+
+  // iOS installed PWA — push is exposed via registration.pushManager after SW is ready.
+  if (isIosDevice() && isStandaloneMode()) return true;
+
+  return false;
+}
 
 export function getNotificationPermissionState(): NotificationPermissionState {
-  if (
-    typeof window === 'undefined' ||
-    !('Notification' in window) ||
-    !('serviceWorker' in navigator) ||
-    !('PushManager' in window)
-  ) {
+  if (!isPushApiAvailable()) {
     return 'unsupported';
   }
   return Notification.permission;
 }
 
-export async function enableReminderNotifications(): Promise<NotificationPermissionState> {
-  if (getNotificationPermissionState() === 'unsupported') {
-    return 'unsupported';
+export async function enableReminderNotifications(): Promise<PushEnableResult> {
+  if (!isPushApiAvailable()) {
+    return { state: 'unsupported' };
   }
 
   const permission = await Notification.requestPermission();
   if (permission !== 'granted') {
-    return permission;
+    return { state: permission };
   }
 
-  const registration = await navigator.serviceWorker.ready;
-  const existing = await registration.pushManager.getSubscription();
-  const publicKey = await fetchVapidPublicKey();
-  const subscription =
-    existing ??
-    (await registration.pushManager.subscribe({
-      userVisibleOnly: true,
-      applicationServerKey: urlBase64ToUint8Array(publicKey),
-    }));
+  try {
+    const registration = await window.navigator.serviceWorker.ready;
 
-  await subscribePushApi(subscription.toJSON());
-  return 'granted';
+    if (!registration.pushManager) {
+      return { state: 'unsupported' };
+    }
+
+    let publicKey: string;
+    try {
+      publicKey = await fetchVapidPublicKey();
+    } catch {
+      return { state: 'misconfigured' };
+    }
+
+    const existing = await registration.pushManager.getSubscription();
+    const subscription =
+      existing ??
+      (await registration.pushManager.subscribe({
+        userVisibleOnly: true,
+        applicationServerKey: urlBase64ToUint8Array(publicKey),
+      }));
+
+    await subscribePushApi(subscription.toJSON());
+    return { state: 'granted' };
+  } catch {
+    return { state: 'error' };
+  }
 }
 
 function urlBase64ToUint8Array(base64String: string) {
