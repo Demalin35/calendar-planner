@@ -23,7 +23,6 @@ import {
 import {
   enableReminderNotifications,
   getNotificationPermissionState,
-  isPushApiAvailable,
   type NotificationPermissionState,
 } from './pushNotifications';
 import type { Reminder, ReminderDraft } from './types';
@@ -147,7 +146,7 @@ export function RemindersView() {
     setPendingNext(null);
   };
 
-  const pushAvailable = isPushApiAvailable();
+  const pushAvailable = getNotificationPermissionState() !== 'unsupported';
   const showIosOpenFromHomeHint =
     isIosSafariBrowser() && notificationState !== 'granted';
   const showEnableButton =
