@@ -57,7 +57,10 @@ describe('pwa detection', () => {
       platform: 'iPhone',
       maxTouchPoints: 5,
       standalone: false,
-      displayModes: { '(display-mode: standalone)': false },
+      displayModes: {
+        '(display-mode: standalone)': false,
+        '(display-mode: browser)': true,
+      },
     });
 
     expect(isIosDevice()).toBe(true);
@@ -94,6 +97,42 @@ describe('pwa detection', () => {
     expect(isStandaloneMode()).toBe(true);
     expect(isIosSafariBrowser()).toBe(false);
     expect(isIosStandalonePwa()).toBe(true);
+  });
+
+  it('detects iPhone Home Screen PWA via non-browser display mode', () => {
+    mockBrowserEnvironment({
+      userAgent:
+        'Mozilla/5.0 (iPhone; CPU iPhone OS 17_0 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/17.0 Mobile/15E148 Safari/604.1',
+      platform: 'iPhone',
+      maxTouchPoints: 5,
+      standalone: false,
+      displayModes: {
+        '(display-mode: standalone)': false,
+        '(display-mode: browser)': false,
+      },
+    });
+
+    expect(isStandaloneMode()).toBe(true);
+    expect(isIosSafariBrowser()).toBe(false);
+    expect(isIosStandalonePwa()).toBe(true);
+  });
+
+  it('detects iPhone Safari tab via browser display mode', () => {
+    mockBrowserEnvironment({
+      userAgent:
+        'Mozilla/5.0 (iPhone; CPU iPhone OS 17_0 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/17.0 Mobile/15E148 Safari/604.1',
+      platform: 'iPhone',
+      maxTouchPoints: 5,
+      standalone: false,
+      displayModes: {
+        '(display-mode: browser)': true,
+        '(display-mode: standalone)': false,
+      },
+    });
+
+    expect(isStandaloneMode()).toBe(false);
+    expect(isIosSafariBrowser()).toBe(true);
+    expect(isIosStandalonePwa()).toBe(false);
   });
 
   it('detects desktop Chrome as neither iOS Safari browser nor iOS standalone', () => {

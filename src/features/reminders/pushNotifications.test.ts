@@ -98,9 +98,9 @@ describe('pushNotifications capability detection', () => {
         serviceWorker: {},
       },
       Notification: { permission: 'default' },
-      matchMedia: () => ({
-        matches: false,
-        media: '',
+      matchMedia: (query: string) => ({
+        matches: query === '(display-mode: browser)',
+        media: query,
         addEventListener: vi.fn(),
         removeEventListener: vi.fn(),
       }),

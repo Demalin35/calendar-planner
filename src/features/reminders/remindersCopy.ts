@@ -24,6 +24,11 @@ type RemindersCopyKey =
   | 'notificationsMisconfigured'
   | 'notificationsEnableError'
   | 'iosInstallForNotifications'
+  | 'iosOpenFromHomeTitle'
+  | 'iosOpenFromHomeHint'
+  | 'iosOpenFromHomeStep1'
+  | 'iosOpenFromHomeStep2'
+  | 'notificationsUnsupportedInstalled'
   | 'offline'
   | 'saveError'
   | 'loadError'
@@ -80,6 +85,14 @@ const COPY: Record<RemindersLanguage, Record<RemindersCopyKey, string>> = {
       'Could not enable notifications. Please try again.',
     iosInstallForNotifications:
       'Install Calendar Planner to your Home Screen to enable notifications.',
+    iosOpenFromHomeTitle: 'Open from your Home Screen',
+    iosOpenFromHomeHint:
+      'You are viewing Calendar Planner in Safari. Reminder notifications only work in the installed Home Screen app — not in a Safari tab.',
+    iosOpenFromHomeStep1: 'Close Safari or this tab.',
+    iosOpenFromHomeStep2:
+      'Open Calendar Planner from its icon on your Home Screen, then return to Reminders.',
+    notificationsUnsupportedInstalled:
+      'Notifications require iOS 16.4 or later in the Home Screen app. Please update iOS and reopen Calendar Planner from your Home Screen icon.',
     offline: 'You are offline. Reminder changes require an internet connection.',
     saveError: 'Could not save the reminder. Please try again.',
     loadError: 'Could not load reminders. Please try again.',
@@ -135,6 +148,14 @@ const COPY: Record<RemindersLanguage, Record<RemindersCopyKey, string>> = {
       'Не удалось включить уведомления. Попробуйте снова.',
     iosInstallForNotifications:
       'Установите Calendar Planner на экран «Домой», чтобы включить уведомления.',
+    iosOpenFromHomeTitle: 'Откройте с экрана «Домой»',
+    iosOpenFromHomeHint:
+      'Сейчас Calendar Planner открыт в Safari. Уведомления работают только в установленном приложении с экрана «Домой», а не во вкладке Safari.',
+    iosOpenFromHomeStep1: 'Закройте Safari или эту вкладку.',
+    iosOpenFromHomeStep2:
+      'Откройте Calendar Planner по иконке на экране «Домой» и снова зайдите в Reminders.',
+    notificationsUnsupportedInstalled:
+      'Уведомления требуют iOS 16.4+ в приложении с экрана «Домой». Обновите iOS и откройте Calendar Planner с иконки на экране «Домой».',
     offline: 'Нет сети. Для напоминаний нужно подключение к интернету.',
     saveError: 'Не удалось сохранить напоминание. Попробуйте снова.',
     loadError: 'Не удалось загрузить напоминания. Попробуйте снова.',

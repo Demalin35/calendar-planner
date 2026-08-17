@@ -1,4 +1,4 @@
-import { isIosDevice, isStandaloneMode } from '../../utils/pwa';
+import { canEnableIosWebPush, isIosDevice } from '../../utils/pwa';
 import { fetchVapidPublicKey, subscribePushApi } from './remindersApi';
 
 export type NotificationPermissionState =
@@ -25,7 +25,7 @@ export function isPushApiAvailable(): boolean {
   if ('PushManager' in window) return true;
 
   // iOS installed PWA — push is exposed via registration.pushManager after SW is ready.
-  if (isIosDevice() && isStandaloneMode()) return true;
+  if (isIosDevice() && canEnableIosWebPush()) return true;
 
   return false;
 }

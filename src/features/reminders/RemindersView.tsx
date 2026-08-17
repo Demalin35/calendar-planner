@@ -6,7 +6,7 @@ import { EmojiTitle } from '../../components/EmojiTitle';
 import { themeClasses } from '../../constants/theme';
 import { useOnlineStatus } from '../../hooks/useOnlineStatus';
 import { useUIStore } from '../../store/uiStore';
-import { isIosSafariBrowser } from '../../utils/pwa';
+import { isIosSafariBrowser, isIosStandalonePwa } from '../../utils/pwa';
 import { formatDateKey } from '../calendar/utils';
 import { CompleteReminderDialog } from './CompleteReminderDialog';
 import { ReminderForm } from './ReminderForm';
@@ -146,22 +146,22 @@ export function RemindersView() {
     setPendingNext(null);
   };
 
-  const showIosInstallHint =
+  const pushAvailable = isPushApiAvailable();
+  const showIosOpenFromHomeHint =
     isIosSafariBrowser() && notificationState !== 'granted';
   const showEnableButton =
-    !showIosInstallHint &&
+    pushAvailable &&
     notificationState !== 'granted' &&
     notificationState !== 'denied' &&
-    notificationState !== 'unsupported' &&
     notificationState !== 'misconfigured';
   const showNotificationSection =
-    showIosInstallHint ||
+    showIosOpenFromHomeHint ||
+    isIosStandalonePwa() ||
+    pushAvailable ||
     notificationState === 'granted' ||
     notificationState === 'denied' ||
-    notificationState === 'unsupported' ||
     notificationState === 'misconfigured' ||
-    notificationState === 'error' ||
-    notificationState === 'default';
+    notificationState === 'error';
 
   return (
     <>
@@ -230,10 +230,19 @@ export function RemindersView() {
 
           {showNotificationSection && (
             <div className="rounded-xl border border-border bg-surface-soft px-3 py-3">
-              {showIosInstallHint ? (
-                <p className="text-xs text-muted">
-                  {rt(lang, 'iosInstallForNotifications')}
-                </p>
+              {showIosOpenFromHomeHint ? (
+                <div className="space-y-2">
+                  <p className="text-sm font-medium text-foreground">
+                    {rt(lang, 'iosOpenFromHomeTitle')}
+                  </p>
+                  <p className="text-xs text-muted">
+                    {rt(lang, 'iosOpenFromHomeHint')}
+                  </p>
+                  <ol className="list-decimal space-y-1 pl-4 text-xs text-muted">
+                    <li>{rt(lang, 'iosOpenFromHomeStep1')}</li>
+                    <li>{rt(lang, 'iosOpenFromHomeStep2')}</li>
+                  </ol>
+                </div>
               ) : notificationState === 'granted' ? (
                 <p className="text-xs text-muted">{rt(lang, 'notificationsEnabled')}</p>
               ) : (
@@ -265,7 +274,9 @@ export function RemindersView() {
                     )}
                     {notificationState === 'unsupported' && (
                       <p className="mt-2 text-xs text-muted">
-                        {rt(lang, 'notificationsUnsupported')}
+                        {isIosStandalonePwa()
+                          ? rt(lang, 'notificationsUnsupportedInstalled')
+                          : rt(lang, 'notificationsUnsupported')}
                       </p>
                     )}
                     {notificationState === 'misconfigured' && (
