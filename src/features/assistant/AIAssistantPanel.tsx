@@ -7,6 +7,7 @@ import { v4 as uuidv4 } from 'uuid';
 import { EmojiTitle } from '../../components/EmojiTitle';
 import { PastelChip } from '../../components/PastelChip';
 import { themeClasses } from '../../constants/theme';
+import { useOnlineStatus } from '../../hooks/useOnlineStatus';
 import { db } from '../../db';
 import { useUIStore } from '../../store/uiStore';
 import type { ChatMessage, SuggestedItem } from './assistantTypes';
@@ -46,6 +47,7 @@ export function AIAssistantPanel() {
     null,
   );
   const messagesEndRef = useRef<HTMLDivElement>(null);
+  const isOnline = useOnlineStatus();
 
   const existingEvents = useLiveQuery(
     () =>
@@ -100,6 +102,24 @@ export function AIAssistantPanel() {
 
     const lang = getAssistantLanguage(trimmed);
     setResponseLanguage(lang);
+
+    if (!isOnline) {
+      setMessages((current) => [
+        ...current,
+        {
+          id: uuidv4(),
+          role: 'user',
+          content: trimmed,
+        },
+        {
+          id: uuidv4(),
+          role: 'assistant',
+          content: t(lang, 'offline'),
+        },
+      ]);
+      setInput('');
+      return;
+    }
 
     const userMessage: ChatMessage = {
       id: uuidv4(),
@@ -385,6 +405,11 @@ export function AIAssistantPanel() {
         </div>
 
         <div className="border-t border-border p-4">
+          {!isOnline && (
+            <p className="mb-3 text-xs text-muted" role="status">
+              {t(responseLanguage, 'offline')}
+            </p>
+          )}
           <form
             className="flex min-w-0 gap-2"
             onSubmit={(event) => {
@@ -397,11 +422,11 @@ export function AIAssistantPanel() {
               onChange={(event) => setInput(event.target.value)}
               placeholder="I need to study, shop, and prep for a meeting..."
               className={clsx('min-w-0 flex-1', themeClasses.input)}
-              disabled={isLoading || isSaving}
+              disabled={!isOnline || isLoading || isSaving}
             />
             <button
               type="submit"
-              disabled={!input.trim() || isLoading || isSaving}
+              disabled={!input.trim() || !isOnline || isLoading || isSaving}
               className={clsx('shrink-0', themeClasses.primaryBtnSm)}
               aria-label="Send message"
             >

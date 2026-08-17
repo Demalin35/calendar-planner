@@ -30,7 +30,8 @@ type CopyKey =
   | 'actionUpdate'
   | 'actionDelete'
   | 'applied'
-  | 'apiError';
+  | 'apiError'
+  | 'offline';
 
 const COPY: Record<AssistantLanguage, Record<CopyKey, string>> = {
   en: {
@@ -71,6 +72,8 @@ const COPY: Record<AssistantLanguage, Record<CopyKey, string>> = {
     applied:
       'Applied: {created} added, {updated} updated, {deleted} deleted.',
     apiError: 'Assistant error: {message}',
+    offline:
+      "You're offline. The AI assistant requires an internet connection.",
   },
   ru: {
     welcome:
@@ -110,6 +113,8 @@ const COPY: Record<AssistantLanguage, Record<CopyKey, string>> = {
     applied:
       'Применено: добавлено {created}, обновлено {updated}, удалено {deleted}.',
     apiError: 'Ошибка ассистента: {message}',
+    offline:
+      'Вы не в сети. Для AI-ассистента нужно подключение к интернету.',
   },
 };
 

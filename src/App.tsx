@@ -1,5 +1,6 @@
 import { AIAssistantButton } from './features/assistant';
 import { NavTabs } from './components/NavTabs';
+import { PwaInstallButton, PwaIosInstallHint } from './components/PwaInstall';
 import { ThemeToggle } from './components/ThemeToggle';
 import { themeClasses } from './constants/theme';
 import { PlannerView } from './features/planner';
@@ -27,7 +28,13 @@ function App() {
                 Your local planner — no account needed
               </p>
             </div>
-            <ThemeToggle />
+            <div className="flex shrink-0 flex-col items-end gap-1.5">
+              <div className="flex items-center gap-2">
+                <PwaInstallButton />
+                <ThemeToggle />
+              </div>
+              <PwaIosInstallHint />
+            </div>
           </div>
         </header>
 
