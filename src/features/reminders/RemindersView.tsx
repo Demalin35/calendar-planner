@@ -23,6 +23,7 @@ import {
 import {
   enableReminderNotifications,
   getNotificationPermissionState,
+  isPushApiAvailable,
   type NotificationPermissionState,
 } from './pushNotifications';
 import type { Reminder, ReminderDraft } from './types';
