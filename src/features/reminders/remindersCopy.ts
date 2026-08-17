@@ -53,6 +53,7 @@ type RemindersCopyKey =
   | 'noThanks'
   | 'presetRent'
   | 'presetHouseBills'
+  | 'presetBirthday'
   | 'presetVehicleInspection'
   | 'presetVignette'
   | 'presetCarInsurance'
@@ -118,6 +119,7 @@ const COPY: Record<RemindersLanguage, Record<RemindersCopyKey, string>> = {
     noThanks: 'No',
     presetRent: 'Pay rent',
     presetHouseBills: 'House bills',
+    presetBirthday: 'Birthday of ...',
     presetVehicleInspection: 'Vehicle inspection',
     presetVignette: 'Vignette',
     presetCarInsurance: 'Car insurance',
@@ -182,6 +184,7 @@ const COPY: Record<RemindersLanguage, Record<RemindersCopyKey, string>> = {
     noThanks: 'Нет',
     presetRent: 'Оплатить аренду',
     presetHouseBills: 'Коммунальные платежи',
+    presetBirthday: 'День рождения ...',
     presetVehicleInspection: 'Техосмотр',
     presetVignette: 'Виньетка',
     presetCarInsurance: 'Страховка авто',
@@ -230,6 +233,7 @@ export const RECURRENCE_OPTIONS: Array<{
 export type ReminderPresetKey =
   | 'presetRent'
   | 'presetHouseBills'
+  | 'presetBirthday'
   | 'presetVehicleInspection'
   | 'presetVignette'
   | 'presetCarInsurance'
@@ -253,6 +257,14 @@ export const REMINDER_PRESETS: Array<
     dueDate: '',
     recurrence: 'monthly',
     notifyDaysBefore: 3,
+  },
+  {
+    emoji: '🎂',
+    titleKey: 'presetBirthday',
+    title: 'Birthday of ...',
+    dueDate: '',
+    recurrence: 'yearly',
+    notifyDaysBefore: 7,
   },
   {
     emoji: '🚗',
