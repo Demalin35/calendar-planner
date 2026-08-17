@@ -10,7 +10,7 @@ import { themeClasses } from '../../constants/theme';
 import { useOnlineStatus } from '../../hooks/useOnlineStatus';
 import { db } from '../../db';
 import { useUIStore } from '../../store/uiStore';
-import type { ChatMessage, SuggestedItem } from './assistantTypes';
+import type { ChatMessage, PendingAction, SuggestedItem } from './assistantTypes';
 import { requestAssistantPlan } from './assistantApi';
 import { t } from './assistantCopy';
 import type { AssistantLanguage } from './detectLanguage';
@@ -46,6 +46,10 @@ export function AIAssistantPanel() {
   const [activePlanMessageId, setActivePlanMessageId] = useState<string | null>(
     null,
   );
+  const [pendingAction, setPendingAction] = useState<PendingAction | null>(null);
+  const [lastExecutedActionId, setLastExecutedActionId] = useState<
+    string | null
+  >(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const isOnline = useOnlineStatus();
 
@@ -94,7 +98,50 @@ export function AIAssistantPanel() {
     setInput('');
     setSelectedIds(new Set());
     setActivePlanMessageId(null);
+    setPendingAction(null);
+    setLastExecutedActionId(null);
   }, [dateKey, dateLabel]);
+
+  const applySuggestions = async (
+    items: SuggestedItem[],
+    summaryOverride?: string,
+  ) => {
+    if (items.length === 0 || isSaving) return null;
+
+    setIsSaving(true);
+    try {
+      const result = await saveApprovedSuggestions(items, existingEvents ?? []);
+      const content =
+        summaryOverride ??
+        [
+          t(responseLanguage, 'applied', {
+            created: result.savedEvents + result.savedTasks,
+            updated: result.updatedEvents,
+            deleted: result.deletedEvents,
+          }),
+          result.skipped > 0
+            ? t(responseLanguage, 'savedSkipped', { count: result.skipped })
+            : '',
+        ]
+          .filter(Boolean)
+          .join('');
+
+      setMessages((current) => [
+        ...current,
+        {
+          id: uuidv4(),
+          role: 'assistant',
+          content,
+        },
+      ]);
+      setActivePlanMessageId(null);
+      setSelectedIds(new Set());
+      setPendingAction(null);
+      return result;
+    } finally {
+      setIsSaving(false);
+    }
+  };
 
   const handleSend = async () => {
     const trimmed = input.trim();
@@ -127,11 +174,17 @@ export function AIAssistantPanel() {
       content: trimmed,
     };
 
+    const conversationHistory = messages
+      .filter((entry) => entry.role === 'user' || entry.role === 'assistant')
+      .slice(-8)
+      .map((entry) => ({
+        role: entry.role,
+        content: entry.content,
+      }));
+
     setMessages((current) => [...current, userMessage]);
     setInput('');
     setIsLoading(true);
-    setActivePlanMessageId(null);
-    setSelectedIds(new Set());
 
     try {
       const plan = await requestAssistantPlan({
@@ -140,7 +193,18 @@ export function AIAssistantPanel() {
         language: lang,
         events: existingEvents ?? [],
         tasks: existingTasks ?? [],
+        conversationHistory,
+        pendingAction,
+        lastExecutedActionId: lastExecutedActionId ?? undefined,
       });
+
+      if (plan.autoApply && plan.suggestions.length > 0) {
+        if (plan.executedActionId) {
+          setLastExecutedActionId(plan.executedActionId);
+        }
+        await applySuggestions(plan.suggestions, plan.summary);
+        return;
+      }
 
       const assistantMessage: ChatMessage = {
         id: uuidv4(),
@@ -150,8 +214,13 @@ export function AIAssistantPanel() {
       };
 
       setMessages((current) => [...current, assistantMessage]);
+      setPendingAction(plan.pendingAction ?? null);
 
-      if (plan.suggestions.length > 0) {
+      if (plan.executedActionId) {
+        setLastExecutedActionId(plan.executedActionId);
+      }
+
+      if (plan.suggestions.length > 0 && plan.pendingAction) {
         setActivePlanMessageId(assistantMessage.id);
         setSelectedIds(
           new Set(
@@ -160,6 +229,9 @@ export function AIAssistantPanel() {
               .map((item) => item.id),
           ),
         );
+      } else {
+        setActivePlanMessageId(null);
+        setSelectedIds(new Set());
       }
     } catch (error) {
       setMessages((current) => [
@@ -193,6 +265,7 @@ export function AIAssistantPanel() {
   const clearActivePlan = () => {
     setActivePlanMessageId(null);
     setSelectedIds(new Set());
+    setPendingAction(null);
     setMessages((current) => [
       ...current,
       {
@@ -205,36 +278,10 @@ export function AIAssistantPanel() {
 
   const handleSave = async (items: SuggestedItem[]) => {
     if (items.length === 0 || isSaving) return;
-
-    setIsSaving(true);
-    try {
-      const result = await saveApprovedSuggestions(items, existingEvents ?? []);
-      const content = [
-        t(responseLanguage, 'applied', {
-          created: result.savedEvents + result.savedTasks,
-          updated: result.updatedEvents,
-          deleted: result.deletedEvents,
-        }),
-        result.skipped > 0
-          ? t(responseLanguage, 'savedSkipped', { count: result.skipped })
-          : '',
-      ]
-        .filter(Boolean)
-        .join('');
-
-      setMessages((current) => [
-        ...current,
-        {
-          id: uuidv4(),
-          role: 'assistant',
-          content,
-        },
-      ]);
-      setActivePlanMessageId(null);
-      setSelectedIds(new Set());
-    } finally {
-      setIsSaving(false);
+    if (pendingAction) {
+      setLastExecutedActionId(pendingAction.id);
     }
+    await applySuggestions(items);
   };
 
   const handleApproveAll = async () => {

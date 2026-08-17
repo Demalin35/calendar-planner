@@ -1,6 +1,10 @@
 import type { CalendarEvent, Task } from '../../types';
 import type { AssistantLanguage } from './detectLanguage';
-import type { AssistantPlanResponse } from './assistantTypes';
+import type {
+  AssistantPlanResponse,
+  ConversationTurn,
+  PendingAction,
+} from './assistantTypes';
 import { generateMockPlan } from './mockAssistant';
 
 export interface PlanAssistantRequest {
@@ -9,6 +13,9 @@ export interface PlanAssistantRequest {
   language: AssistantLanguage;
   events: CalendarEvent[];
   tasks: Task[];
+  conversationHistory?: ConversationTurn[];
+  pendingAction?: PendingAction | null;
+  lastExecutedActionId?: string;
 }
 
 function toDtoEvent(event: CalendarEvent) {
@@ -69,6 +76,9 @@ export async function requestAssistantPlan(
         language: request.language,
         events: request.events.map(toDtoEvent),
         tasks: request.tasks.map(toDtoTask),
+        conversationHistory: request.conversationHistory,
+        pendingAction: request.pendingAction,
+        lastExecutedActionId: request.lastExecutedActionId,
       }),
     });
   } catch (error) {
@@ -77,12 +87,15 @@ export async function requestAssistantPlan(
         '[assistant] Server unreachable — using mock planner:',
         error instanceof Error ? error.message : error,
       );
-      return generateMockPlan(
-        request.message,
-        request.selectedDate,
-        request.events,
-        request.tasks,
-      );
+      return generateMockPlan({
+        message: request.message,
+        selectedDate: request.selectedDate,
+        events: request.events,
+        tasks: request.tasks,
+        conversationHistory: request.conversationHistory,
+        pendingAction: request.pendingAction,
+        lastExecutedActionId: request.lastExecutedActionId,
+      });
     }
     throw new Error(
       error instanceof Error ? error.message : 'Assistant server unreachable',

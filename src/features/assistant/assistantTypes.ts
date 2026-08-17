@@ -17,11 +17,26 @@ export interface SuggestedItem {
   conflictReason?: string;
 }
 
+export interface PendingAction {
+  id: string;
+  createdAt: string;
+  suggestions: SuggestedItem[];
+  sourceMessage?: string;
+}
+
+export interface ConversationTurn {
+  role: 'user' | 'assistant';
+  content: string;
+}
+
 export interface AssistantPlanResponse {
   summary: string;
   notes: string[];
   suggestions: SuggestedItem[];
   approvalPrompt: string;
+  pendingAction?: PendingAction | null;
+  autoApply?: boolean;
+  executedActionId?: string;
 }
 
 export interface ChatMessage {

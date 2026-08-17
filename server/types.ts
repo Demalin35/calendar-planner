@@ -38,11 +38,26 @@ export interface SuggestedItemDto {
   conflictReason?: string;
 }
 
+export interface PendingActionDto {
+  id: string;
+  createdAt: string;
+  suggestions: SuggestedItemDto[];
+  sourceMessage?: string;
+}
+
+export interface ConversationTurnDto {
+  role: 'user' | 'assistant';
+  content: string;
+}
+
 export interface AssistantPlanResponseDto {
   summary: string;
   notes: string[];
   suggestions: SuggestedItemDto[];
   approvalPrompt: string;
+  pendingAction?: PendingActionDto | null;
+  autoApply?: boolean;
+  executedActionId?: string;
 }
 
 export interface PlanRequestBody {
@@ -51,4 +66,7 @@ export interface PlanRequestBody {
   language?: 'en' | 'ru';
   events: CalendarEventDto[];
   tasks: TaskDto[];
+  conversationHistory?: ConversationTurnDto[];
+  pendingAction?: PendingActionDto | null;
+  lastExecutedActionId?: string;
 }

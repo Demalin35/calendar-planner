@@ -13,8 +13,22 @@ import {
   extractTimeFromMessage,
   stripTimeFromMessage,
 } from './extractTimeFromMessage';
+import {
+  applyPendingModification,
+  buildApprovalPrompt,
+  buildDoneSummary,
+  createPendingAction,
+  detectClientIntent,
+  getActionableSuggestions,
+  isExplicitCreateIntent,
+  requiresConfirmationForProposals,
+  resolveDateFromMessage,
+  validatePendingSuggestions,
+} from './conversationState';
 import type {
   AssistantPlanResponse,
+  ConversationTurn,
+  PendingAction,
   PlanningContext,
   SuggestedItem,
 } from './assistantTypes';
@@ -84,6 +98,20 @@ const ACTIVITY_PATTERNS: ActivityPattern[] = [
     type: 'event',
     color: '#D7EAF5',
     durationMinutes: 45,
+  },
+  {
+    keywords: [
+      'swim',
+      'swimming',
+      'pool',
+      'плав',
+      'бассейн',
+    ],
+    title: { en: 'Swimming', ru: 'Плавание' },
+    emoji: '🏊',
+    type: 'event',
+    color: '#CDECEE',
+    durationMinutes: 60,
   },
   {
     keywords: [
@@ -272,8 +300,11 @@ function extractCustomTitle(
         ]
       : [
           /^(?:i\s+)?want\s+to\s+/i,
+          /^(?:i\s+)?have\s+a\s+plan\s+to\s+(?:go\s+)?(?:for\s+)?/i,
           /^remind\s+me\s+to\s+/i,
           /^please\s+/i,
+          /\bcan you add\b.*$/i,
+          /\bcould you add\b.*$/i,
         ];
 
   for (const pattern of prefixPatterns) {
@@ -281,11 +312,15 @@ function extractCustomTitle(
   }
 
   text = text
-    .replace(/\s+(?:today|сегодня|tomorrow|завтра)\s*$/i, '')
+    .replace(/\b(?:today|сегодня|tomorrow|завтра)\b/gi, ' ')
+    .replace(/\b(?:can you add(?: it)?|could you add(?: it)?|please add(?: it)?)\b.*$/i, '')
+    .replace(/^(?:a|an|the)\s+/i, '')
+    .replace(/\s+(?:at|в)\s*$/i, '')
     .replace(/[.!?]+$/g, '')
+    .replace(/\s+/g, ' ')
     .trim();
 
-  if (text.length > 2) {
+  if (text.length > 2 && !/\b(?:today|tomorrow|завтра|сегодня)\b/i.test(text)) {
     return text.charAt(0).toUpperCase() + text.slice(1);
   }
 
@@ -294,13 +329,15 @@ function extractCustomTitle(
 
 function buildTimedSuggestion(
   userMessage: string,
-  date: string,
+  selectedDate: string,
   existingEvents: CalendarEvent[],
   lang: AssistantLanguage,
 ): AssistantPlanResponse | null {
   const extractedTime = extractTimeFromMessage(userMessage);
   if (!extractedTime.time) return null;
 
+  const eventDate = resolveDateFromMessage(userMessage, selectedDate);
+  const dateEvents = existingEvents.filter((event) => event.date === eventDate);
   const activities = extractActivities(userMessage, lang);
   const primary = activities[0];
   const title = extractCustomTitle(
@@ -320,9 +357,10 @@ function buildTimedSuggestion(
 
   const rawSuggestion: SuggestedItem = {
     id: uuidv4(),
+    action: 'create',
     type: primary.type,
     title,
-    date,
+    date: eventDate,
     startTime,
     endTime,
     color: primary.color,
@@ -331,18 +369,37 @@ function buildTimedSuggestion(
     hasConflict: false,
   };
 
-  const suggestions = markConflicts([rawSuggestion], existingEvents, lang);
+  const suggestions = markConflicts([rawSuggestion], dateEvents, lang);
   const notes: string[] = [];
 
   if (suggestions[0]?.hasConflict) {
     notes.push(t(lang, 'conflictReason'));
   }
 
+  const explicitCreate = isExplicitCreateIntent(userMessage);
+  const needsConfirmation = requiresConfirmationForProposals(
+    suggestions,
+    explicitCreate,
+  );
+  const actionable = getActionableSuggestions(suggestions);
+
+  if (!needsConfirmation && actionable.length > 0) {
+    return {
+      summary: buildDoneSummary(actionable, lang),
+      notes,
+      suggestions: actionable,
+      approvalPrompt: '',
+      pendingAction: null,
+      autoApply: true,
+    };
+  }
+
   return {
     summary: t(lang, 'timedSummary', { title, time: startTime }),
     notes,
     suggestions,
-    approvalPrompt: t(lang, 'timedApproval'),
+    approvalPrompt: buildApprovalPrompt(suggestions, lang),
+    pendingAction: createPendingAction(suggestions, userMessage),
   };
 }
 
@@ -388,21 +445,142 @@ function markConflicts(
   });
 }
 
+export interface MockPlanRequest {
+  message: string;
+  selectedDate: string;
+  events: CalendarEvent[];
+  tasks: Task[];
+  conversationHistory?: ConversationTurn[];
+  pendingAction?: PendingAction | null;
+  lastExecutedActionId?: string;
+}
+
+function handleMockPendingConfirmation(
+  request: MockPlanRequest,
+  lang: AssistantLanguage,
+): AssistantPlanResponse | null {
+  const pending = request.pendingAction;
+  if (!pending) return null;
+
+  const intent = detectClientIntent(request.message, true);
+  const events = request.events;
+
+  if (intent === 'reject_pending') {
+    return {
+      summary: t(lang, 'reject'),
+      notes: [],
+      suggestions: [],
+      approvalPrompt: '',
+      pendingAction: null,
+    };
+  }
+
+  if (intent === 'modify_pending') {
+    const modified = applyPendingModification(
+      request.message,
+      pending,
+      request.selectedDate,
+    );
+    if (!modified) return null;
+
+    const validated = validatePendingSuggestions(
+      modified.suggestions,
+      events,
+    );
+    const actionable = getActionableSuggestions(validated);
+    const updatedPending = { ...modified, suggestions: validated };
+
+    if (actionable.length === 0) {
+      return {
+        summary:
+          lang === 'ru'
+            ? 'Обновлённый вариант конфликтует с существующими событиями.'
+            : 'The updated option conflicts with existing events.',
+        notes: [],
+        suggestions: validated,
+        approvalPrompt: buildApprovalPrompt(validated, lang),
+        pendingAction: updatedPending,
+      };
+    }
+
+    const primary = actionable[0];
+    return {
+      summary:
+        lang === 'ru'
+          ? `Обновлено: ${primary.title} ${primary.date} в ${primary.startTime}. Применить?`
+          : `Updated: ${primary.title} on ${primary.date} at ${primary.startTime}. Shall I apply this?`,
+      notes: [],
+      suggestions: validated,
+      approvalPrompt: buildApprovalPrompt(validated, lang),
+      pendingAction: updatedPending,
+    };
+  }
+
+  if (intent !== 'confirm_pending') return null;
+
+  if (
+    request.lastExecutedActionId &&
+    request.lastExecutedActionId === pending.id
+  ) {
+    return {
+      summary:
+        lang === 'ru' ? 'Это уже было применено.' : 'That was already applied.',
+      notes: [],
+      suggestions: [],
+      approvalPrompt: '',
+      pendingAction: null,
+      executedActionId: pending.id,
+    };
+  }
+
+  const validated = validatePendingSuggestions(pending.suggestions, events);
+  const actionable = getActionableSuggestions(validated);
+
+  if (actionable.length === 0) {
+    return {
+      summary:
+        lang === 'ru'
+          ? 'Не могу применить — есть конфликты.'
+          : 'Cannot apply — there are conflicts.',
+      notes: [],
+      suggestions: validated,
+      approvalPrompt: buildApprovalPrompt(validated, lang),
+      pendingAction: { ...pending, suggestions: validated },
+    };
+  }
+
+  return {
+    summary: buildDoneSummary(actionable, lang),
+    notes: [],
+    suggestions: actionable,
+    approvalPrompt: '',
+    pendingAction: null,
+    autoApply: true,
+    executedActionId: pending.id,
+  };
+}
+
 /**
- * TODO: Replace this mock with a backend API call.
- * The real OpenAI integration should live on the server, e.g. POST /api/assistant/plan
- * with { message, date, events, tasks } and return structured suggestions.
- * Pass `lang` to the API so responses match the user's language.
+ * Local fallback planner when the assistant API is unreachable in development.
  */
 export async function generateMockPlan(
-  userMessage: string,
-  date: string,
-  existingEvents: CalendarEvent[],
-  existingTasks: Task[],
+  request: MockPlanRequest,
 ): Promise<AssistantPlanResponse> {
   await new Promise((resolve) => setTimeout(resolve, 700));
 
+  const {
+    message: userMessage,
+    selectedDate: date,
+    events: existingEvents,
+    tasks: existingTasks,
+  } = request;
+
   const lang = getAssistantLanguage(userMessage);
+  const pendingResult = handleMockPendingConfirmation(request, lang);
+  if (pendingResult) {
+    return pendingResult;
+  }
+
   const formattedDate = formatPlanDate(date, lang);
 
   const timedPlan = buildTimedSuggestion(
@@ -484,11 +662,30 @@ export async function generateMockPlan(
       ? t(lang, 'summaryOne', { date: formattedDate })
       : t(lang, 'summaryMany', { date: formattedDate, count: suggestions.length });
 
+  const explicitCreate = isExplicitCreateIntent(userMessage);
+  const needsConfirmation = requiresConfirmationForProposals(
+    suggestions,
+    explicitCreate,
+  );
+  const actionable = getActionableSuggestions(suggestions);
+
+  if (!needsConfirmation && actionable.length > 0) {
+    return {
+      summary: buildDoneSummary(actionable, lang),
+      notes,
+      suggestions: actionable,
+      approvalPrompt: '',
+      pendingAction: null,
+      autoApply: true,
+    };
+  }
+
   return {
     summary,
     notes,
     suggestions,
-    approvalPrompt: t(lang, 'approvalPrompt'),
+    approvalPrompt: buildApprovalPrompt(suggestions, lang),
+    pendingAction: createPendingAction(suggestions, userMessage),
   };
 }
 

@@ -143,6 +143,14 @@ app.post('/api/assistant/plan', assistantLimiter, async (req, res) => {
       language: body.language === 'ru' ? 'ru' : 'en',
       events: Array.isArray(body.events) ? body.events : [],
       tasks: Array.isArray(body.tasks) ? body.tasks : [],
+      conversationHistory: Array.isArray(body.conversationHistory)
+        ? body.conversationHistory
+        : undefined,
+      pendingAction: body.pendingAction ?? undefined,
+      lastExecutedActionId:
+        typeof body.lastExecutedActionId === 'string'
+          ? body.lastExecutedActionId
+          : undefined,
     });
 
     res.json(plan);
