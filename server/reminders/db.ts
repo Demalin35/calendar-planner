@@ -1,6 +1,5 @@
 import fs from 'node:fs';
 import path from 'node:path';
-import Database from 'better-sqlite3';
 import { randomUUID } from 'node:crypto';
 import type {
   CreateReminderBody,
@@ -18,78 +17,74 @@ const VALID_RECURRENCE = new Set<ReminderRecurrence>([
 ]);
 const VALID_NOTIFY_DAYS = new Set([0, 1, 3, 7]);
 
-let db: Database.Database | null = null;
-
-function resolveDbPath(): string {
-  const configured = process.env.REMINDERS_DB_PATH?.trim();
-  if (configured) return configured;
-  return path.resolve(process.cwd(), 'data', 'reminders.db');
+interface RemindersStoreData {
+  reminders: ReminderRecord[];
+  pushSubscriptions: PushSubscriptionRecord[];
+  notificationSent: Array<{ reminderId: string; notifyOn: string }>;
 }
 
-export function getRemindersDb(): Database.Database {
-  if (db) return db;
+let store: RemindersStoreData | null = null;
+let storePath = '';
 
-  const dbPath = resolveDbPath();
-  fs.mkdirSync(path.dirname(dbPath), { recursive: true });
-  db = new Database(dbPath);
-  db.pragma('journal_mode = WAL');
-  initializeSchema(db);
-  return db;
+function resolveStorePath(): string {
+  const configured =
+    process.env.REMINDERS_DATA_PATH?.trim() ||
+    process.env.REMINDERS_DB_PATH?.trim();
+  if (configured) {
+    return configured.endsWith('.json')
+      ? configured
+      : `${configured}.json`;
+  }
+  return path.resolve(process.cwd(), 'data', 'reminders.json');
 }
 
-function initializeSchema(database: Database.Database) {
-  database.exec(`
-    CREATE TABLE IF NOT EXISTS reminders (
-      id TEXT PRIMARY KEY,
-      device_id TEXT NOT NULL,
-      title TEXT NOT NULL,
-      emoji TEXT,
-      due_date TEXT NOT NULL,
-      recurrence TEXT NOT NULL,
-      notify_days_before INTEGER NOT NULL,
-      completed INTEGER NOT NULL DEFAULT 0,
-      completed_at TEXT,
-      created_at TEXT NOT NULL,
-      updated_at TEXT NOT NULL
-    );
-
-    CREATE INDEX IF NOT EXISTS idx_reminders_device_id ON reminders(device_id);
-    CREATE INDEX IF NOT EXISTS idx_reminders_due_date ON reminders(due_date);
-
-    CREATE TABLE IF NOT EXISTS push_subscriptions (
-      id TEXT PRIMARY KEY,
-      device_id TEXT NOT NULL,
-      endpoint TEXT NOT NULL UNIQUE,
-      p256dh TEXT NOT NULL,
-      auth TEXT NOT NULL,
-      created_at TEXT NOT NULL
-    );
-
-    CREATE INDEX IF NOT EXISTS idx_push_subscriptions_device_id
-      ON push_subscriptions(device_id);
-
-    CREATE TABLE IF NOT EXISTS notification_sent (
-      reminder_id TEXT NOT NULL,
-      notify_on TEXT NOT NULL,
-      PRIMARY KEY (reminder_id, notify_on)
-    );
-  `);
-}
-
-function mapReminder(row: Record<string, unknown>): ReminderRecord {
+function emptyStore(): RemindersStoreData {
   return {
-    id: String(row.id),
-    deviceId: String(row.device_id),
-    title: String(row.title),
-    emoji: row.emoji ? String(row.emoji) : undefined,
-    dueDate: String(row.due_date),
-    recurrence: String(row.recurrence) as ReminderRecurrence,
-    notifyDaysBefore: Number(row.notify_days_before),
-    completed: Boolean(row.completed),
-    completedAt: row.completed_at ? String(row.completed_at) : undefined,
-    createdAt: String(row.created_at),
-    updatedAt: String(row.updated_at),
+    reminders: [],
+    pushSubscriptions: [],
+    notificationSent: [],
   };
+}
+
+function loadStoreFromDisk(): RemindersStoreData {
+  if (!fs.existsSync(storePath)) {
+    return emptyStore();
+  }
+  try {
+    const raw = fs.readFileSync(storePath, 'utf8');
+    const parsed = JSON.parse(raw) as Partial<RemindersStoreData>;
+    return {
+      reminders: Array.isArray(parsed.reminders) ? parsed.reminders : [],
+      pushSubscriptions: Array.isArray(parsed.pushSubscriptions)
+        ? parsed.pushSubscriptions
+        : [],
+      notificationSent: Array.isArray(parsed.notificationSent)
+        ? parsed.notificationSent
+        : [],
+    };
+  } catch {
+    return emptyStore();
+  }
+}
+
+function persistStore() {
+  if (!store) return;
+  fs.mkdirSync(path.dirname(storePath), { recursive: true });
+  const tempPath = `${storePath}.tmp`;
+  fs.writeFileSync(tempPath, JSON.stringify(store, null, 2), 'utf8');
+  fs.renameSync(tempPath, storePath);
+}
+
+function getStore(): RemindersStoreData {
+  if (!store) {
+    storePath = resolveStorePath();
+    store = loadStoreFromDisk();
+  }
+  return store;
+}
+
+export function getRemindersDb(): RemindersStoreData {
+  return getStore();
 }
 
 export function validateReminderInput(body: CreateReminderBody): string | null {
@@ -106,26 +101,24 @@ export function validateReminderInput(body: CreateReminderBody): string | null {
 }
 
 export function listReminders(deviceId: string): ReminderRecord[] {
-  const rows = getRemindersDb()
-    .prepare(
-      `SELECT * FROM reminders
-       WHERE device_id = ?
-       ORDER BY completed ASC, due_date ASC, title ASC`,
-    )
-    .all(deviceId) as Record<string, unknown>[];
-
-  return rows.map(mapReminder);
+  return getStore()
+    .reminders.filter((reminder) => reminder.deviceId === deviceId)
+    .sort((a, b) => {
+      if (a.completed !== b.completed) return a.completed ? 1 : -1;
+      if (a.dueDate !== b.dueDate) return a.dueDate.localeCompare(b.dueDate);
+      return a.title.localeCompare(b.title);
+    });
 }
 
 export function getReminder(
   deviceId: string,
   id: string,
 ): ReminderRecord | null {
-  const row = getRemindersDb()
-    .prepare('SELECT * FROM reminders WHERE id = ? AND device_id = ?')
-    .get(id, deviceId) as Record<string, unknown> | undefined;
-
-  return row ? mapReminder(row) : null;
+  return (
+    getStore().reminders.find(
+      (reminder) => reminder.id === id && reminder.deviceId === deviceId,
+    ) ?? null
+  );
 }
 
 export function createReminder(
@@ -133,27 +126,22 @@ export function createReminder(
   body: CreateReminderBody,
 ): ReminderRecord {
   const now = new Date().toISOString();
-  const id = randomUUID();
-  getRemindersDb()
-    .prepare(
-      `INSERT INTO reminders (
-        id, device_id, title, emoji, due_date, recurrence,
-        notify_days_before, completed, created_at, updated_at
-      ) VALUES (?, ?, ?, ?, ?, ?, ?, 0, ?, ?)`,
-    )
-    .run(
-      id,
-      deviceId,
-      body.title.trim(),
-      body.emoji?.trim() || null,
-      body.dueDate,
-      body.recurrence,
-      body.notifyDaysBefore,
-      now,
-      now,
-    );
+  const reminder: ReminderRecord = {
+    id: randomUUID(),
+    deviceId,
+    title: body.title.trim(),
+    emoji: body.emoji?.trim() || undefined,
+    dueDate: body.dueDate,
+    recurrence: body.recurrence,
+    notifyDaysBefore: body.notifyDaysBefore,
+    completed: false,
+    createdAt: now,
+    updatedAt: now,
+  };
 
-  return getReminder(deviceId, id)!;
+  getStore().reminders.push(reminder);
+  persistStore();
+  return reminder;
 }
 
 export function updateReminder(
@@ -161,12 +149,17 @@ export function updateReminder(
   id: string,
   body: UpdateReminderBody,
 ): ReminderRecord | null {
-  const existing = getReminder(deviceId, id);
-  if (!existing) return null;
+  const data = getStore();
+  const index = data.reminders.findIndex(
+    (reminder) => reminder.id === id && reminder.deviceId === deviceId,
+  );
+  if (index === -1) return null;
 
+  const existing = data.reminders[index];
   const next = {
     title: body.title?.trim() ?? existing.title,
-    emoji: body.emoji !== undefined ? body.emoji.trim() || undefined : existing.emoji,
+    emoji:
+      body.emoji !== undefined ? body.emoji.trim() || undefined : existing.emoji,
     dueDate: body.dueDate ?? existing.dueDate,
     recurrence: body.recurrence ?? existing.recurrence,
     notifyDaysBefore: body.notifyDaysBefore ?? existing.notifyDaysBefore,
@@ -181,35 +174,27 @@ export function updateReminder(
 
   if (validateReminderInput(next)) return null;
 
-  getRemindersDb()
-    .prepare(
-      `UPDATE reminders SET
-        title = ?, emoji = ?, due_date = ?, recurrence = ?,
-        notify_days_before = ?, completed = ?, completed_at = ?,
-        updated_at = ?
-      WHERE id = ? AND device_id = ?`,
-    )
-    .run(
-      next.title,
-      next.emoji ?? null,
-      next.dueDate,
-      next.recurrence,
-      next.notifyDaysBefore,
-      next.completed ? 1 : 0,
-      next.completedAt ?? null,
-      new Date().toISOString(),
-      id,
-      deviceId,
-    );
-
-  return getReminder(deviceId, id);
+  data.reminders[index] = {
+    ...existing,
+    ...next,
+    updatedAt: new Date().toISOString(),
+  };
+  persistStore();
+  return data.reminders[index];
 }
 
 export function deleteReminder(deviceId: string, id: string): boolean {
-  const result = getRemindersDb()
-    .prepare('DELETE FROM reminders WHERE id = ? AND device_id = ?')
-    .run(id, deviceId);
-  return result.changes > 0;
+  const data = getStore();
+  const before = data.reminders.length;
+  data.reminders = data.reminders.filter(
+    (reminder) => !(reminder.id === id && reminder.deviceId === deviceId),
+  );
+  if (data.reminders.length === before) return false;
+  data.notificationSent = data.notificationSent.filter(
+    (entry) => entry.reminderId !== id,
+  );
+  persistStore();
+  return true;
 }
 
 export function addPushSubscription(
@@ -219,63 +204,56 @@ export function addPushSubscription(
   auth: string,
 ): PushSubscriptionRecord {
   const now = new Date().toISOString();
-  const id = randomUUID();
-  getRemindersDb()
-    .prepare(
-      `INSERT INTO push_subscriptions (id, device_id, endpoint, p256dh, auth, created_at)
-       VALUES (?, ?, ?, ?, ?, ?)
-       ON CONFLICT(endpoint) DO UPDATE SET
-         device_id = excluded.device_id,
-         p256dh = excluded.p256dh,
-         auth = excluded.auth,
-         created_at = excluded.created_at`,
-    )
-    .run(id, deviceId, endpoint, p256dh, auth, now);
+  const data = getStore();
+  const existingIndex = data.pushSubscriptions.findIndex(
+    (subscription) => subscription.endpoint === endpoint,
+  );
 
-  return {
-    id,
+  const record: PushSubscriptionRecord = {
+    id: existingIndex >= 0 ? data.pushSubscriptions[existingIndex].id : randomUUID(),
     deviceId,
     endpoint,
     p256dh,
     auth,
     createdAt: now,
   };
+
+  if (existingIndex >= 0) {
+    data.pushSubscriptions[existingIndex] = record;
+  } else {
+    data.pushSubscriptions.push(record);
+  }
+
+  persistStore();
+  return record;
 }
 
-export function listPushSubscriptions(deviceId: string): PushSubscriptionRecord[] {
-  const rows = getRemindersDb()
-    .prepare('SELECT * FROM push_subscriptions WHERE device_id = ?')
-    .all(deviceId) as Record<string, unknown>[];
-
-  return rows.map((row) => ({
-    id: String(row.id),
-    deviceId: String(row.device_id),
-    endpoint: String(row.endpoint),
-    p256dh: String(row.p256dh),
-    auth: String(row.auth),
-    createdAt: String(row.created_at),
-  }));
+export function listPushSubscriptions(
+  deviceId: string,
+): PushSubscriptionRecord[] {
+  return getStore().pushSubscriptions.filter(
+    (subscription) => subscription.deviceId === deviceId,
+  );
 }
 
-export function removePushSubscription(deviceId: string, endpoint: string): boolean {
-  const result = getRemindersDb()
-    .prepare(
-      'DELETE FROM push_subscriptions WHERE device_id = ? AND endpoint = ?',
-    )
-    .run(deviceId, endpoint);
-  return result.changes > 0;
+export function removePushSubscription(
+  deviceId: string,
+  endpoint: string,
+): boolean {
+  const data = getStore();
+  const before = data.pushSubscriptions.length;
+  data.pushSubscriptions = data.pushSubscriptions.filter(
+    (subscription) =>
+      !(subscription.deviceId === deviceId && subscription.endpoint === endpoint),
+  );
+  if (data.pushSubscriptions.length === before) return false;
+  persistStore();
+  return true;
 }
 
 export function listDueNotificationCandidates(today: string): ReminderRecord[] {
-  const rows = getRemindersDb()
-    .prepare(
-      `SELECT * FROM reminders
-       WHERE completed = 0`,
-    )
-    .all() as Record<string, unknown>[];
-
-  return rows
-    .map(mapReminder)
+  return getStore()
+    .reminders.filter((reminder) => !reminder.completed)
     .filter((reminder) => {
       const notifyOn = subtractDays(reminder.dueDate, reminder.notifyDaysBefore);
       return notifyOn === today;
@@ -283,25 +261,22 @@ export function listDueNotificationCandidates(today: string): ReminderRecord[] {
 }
 
 export function markNotificationSent(reminderId: string, notifyOn: string) {
-  getRemindersDb()
-    .prepare(
-      `INSERT OR IGNORE INTO notification_sent (reminder_id, notify_on)
-       VALUES (?, ?)`,
-    )
-    .run(reminderId, notifyOn);
+  const data = getStore();
+  const exists = data.notificationSent.some(
+    (entry) => entry.reminderId === reminderId && entry.notifyOn === notifyOn,
+  );
+  if (exists) return;
+  data.notificationSent.push({ reminderId, notifyOn });
+  persistStore();
 }
 
 export function wasNotificationSent(
   reminderId: string,
   notifyOn: string,
 ): boolean {
-  const row = getRemindersDb()
-    .prepare(
-      `SELECT 1 FROM notification_sent
-       WHERE reminder_id = ? AND notify_on = ?`,
-    )
-    .get(reminderId, notifyOn);
-  return Boolean(row);
+  return getStore().notificationSent.some(
+    (entry) => entry.reminderId === reminderId && entry.notifyOn === notifyOn,
+  );
 }
 
 export function subtractDays(dateKey: string, days: number): string {
@@ -328,5 +303,8 @@ export function addRecurrence(
 }
 
 export function getDbPathForLogging(): string {
-  return resolveDbPath();
+  if (!storePath) {
+    storePath = resolveStorePath();
+  }
+  return storePath;
 }
