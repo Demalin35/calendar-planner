@@ -12,6 +12,7 @@ dist
 dist-ssr
 server-dist
 server/dist
+data/
 *.local
 
 # Environment / secrets

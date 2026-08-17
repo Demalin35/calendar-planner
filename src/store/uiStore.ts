@@ -4,6 +4,7 @@ import {
   getStoredTheme,
   persistTheme,
 } from '../constants/theme';
+import type { ReminderDraft } from '../features/reminders/types';
 import type { AppTheme } from '../types/theme';
 import type { CalendarView } from '../types';
 
@@ -15,12 +16,17 @@ interface UIState {
   editingEventId: string | null;
   isTaskModalOpen: boolean;
   editingTaskId: string | null;
+  isReminderModalOpen: boolean;
+  editingReminderId: string | null;
+  reminderDraft: ReminderDraft | null;
+  focusedReminderId: string | null;
   suggestedStartTime: string | null;
   suggestedEndTime: string | null;
   isAssistantOpen: boolean;
   toggleTheme: () => void;
   setSelectedDate: (date: Date) => void;
   setCurrentView: (view: CalendarView) => void;
+  setFocusedReminderId: (id: string | null) => void;
   openEventModal: (
     date?: Date,
     eventId?: string,
@@ -30,6 +36,8 @@ interface UIState {
   closeEventModal: () => void;
   openTaskModal: (taskId?: string, date?: Date) => void;
   closeTaskModal: () => void;
+  openReminderModal: (reminderId?: string, draft?: ReminderDraft) => void;
+  closeReminderModal: () => void;
   openAssistant: () => void;
   closeAssistant: () => void;
 }
@@ -42,6 +50,10 @@ export const useUIStore = create<UIState>((set) => ({
   editingEventId: null,
   isTaskModalOpen: false,
   editingTaskId: null,
+  isReminderModalOpen: false,
+  editingReminderId: null,
+  reminderDraft: null,
+  focusedReminderId: null,
   suggestedStartTime: null,
   suggestedEndTime: null,
   isAssistantOpen: false,
@@ -57,6 +69,8 @@ export const useUIStore = create<UIState>((set) => ({
   setSelectedDate: (date) => set({ selectedDate: date }),
 
   setCurrentView: (view) => set({ currentView: view }),
+
+  setFocusedReminderId: (id) => set({ focusedReminderId: id }),
 
   openEventModal: (date, eventId, startTime, endTime) =>
     set({
@@ -84,6 +98,20 @@ export const useUIStore = create<UIState>((set) => ({
 
   closeTaskModal: () =>
     set({ isTaskModalOpen: false, editingTaskId: null }),
+
+  openReminderModal: (reminderId, draft) =>
+    set({
+      isReminderModalOpen: true,
+      editingReminderId: reminderId ?? null,
+      reminderDraft: reminderId ? null : (draft ?? null),
+    }),
+
+  closeReminderModal: () =>
+    set({
+      isReminderModalOpen: false,
+      editingReminderId: null,
+      reminderDraft: null,
+    }),
 
   openAssistant: () => set({ isAssistantOpen: true }),
 

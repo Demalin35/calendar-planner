@@ -43,6 +43,7 @@ export default defineConfig({
         navigateFallback: "/index.html",
         navigateFallbackDenylist: [/^\/api\//],
         runtimeCaching: [],
+        importScripts: ["push-handler.js"],
       },
       devOptions: {
         enabled: false,

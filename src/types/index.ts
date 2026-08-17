@@ -1,4 +1,4 @@
-export type CalendarView = 'month' | 'day' | 'planner' | 'tasks';
+export type CalendarView = 'month' | 'planner' | 'tasks' | 'reminders';
 
 export interface CalendarEvent {
   id: string;

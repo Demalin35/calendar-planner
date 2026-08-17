@@ -1,11 +1,12 @@
+import { useEffect } from 'react';
 import { AIAssistantButton } from './features/assistant';
 import { NavTabs } from './components/NavTabs';
 import { PwaInstallButton } from './components/PwaInstall';
 import { ThemeToggle } from './components/ThemeToggle';
 import { themeClasses } from './constants/theme';
 import { PlannerView } from './features/planner';
+import { RemindersView } from './features/reminders';
 import { TaskForm, TasksView } from './features/tasks';
-import { DayView } from './features/calendar/DayView';
 import { EventForm } from './features/calendar/EventForm';
 import { MonthView } from './features/calendar/MonthView';
 import { useUIStore } from './store/uiStore';
@@ -14,6 +15,20 @@ function App() {
   const currentView = useUIStore((s) => s.currentView);
   const isEventModalOpen = useUIStore((s) => s.isEventModalOpen);
   const isTaskModalOpen = useUIStore((s) => s.isTaskModalOpen);
+  const setCurrentView = useUIStore((s) => s.setCurrentView);
+  const setFocusedReminderId = useUIStore((s) => s.setFocusedReminderId);
+
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    const view = params.get('view');
+    if (view === 'reminders') {
+      setCurrentView('reminders');
+      const reminderId = params.get('reminderId');
+      if (reminderId) {
+        setFocusedReminderId(reminderId);
+      }
+    }
+  }, [setCurrentView, setFocusedReminderId]);
 
   return (
     <div className={themeClasses.page}>
@@ -39,9 +54,9 @@ function App() {
 
         <main className="mt-4 min-w-0 flex-1">
           {currentView === 'month' && <MonthView />}
-          {currentView === 'day' && <DayView />}
           {currentView === 'planner' && <PlannerView />}
           {currentView === 'tasks' && <TasksView />}
+          {currentView === 'reminders' && <RemindersView />}
         </main>
       </div>
 

@@ -9,6 +9,18 @@ import fs from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { runPlanningAssistant } from './assistant.js';
+import { getDbPathForLogging, getRemindersDb } from './reminders/db.js';
+import {
+  completeReminder,
+  deleteReminderHandler,
+  getReminders,
+  getVapidPublicKeyHandler,
+  postReminder,
+  putReminder,
+  subscribePush,
+  unsubscribePush,
+} from './reminders/routes.js';
+import { startReminderScheduler } from './reminders/push.js';
 import type { PlanRequestBody } from './types.js';
 
 const __filename = fileURLToPath(import.meta.url);
@@ -53,10 +65,23 @@ const assistantLimiter = rateLimit({
   message: { error: 'Too many assistant requests. Please try again later.' },
 });
 
+const remindersLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000,
+  max: 120,
+  standardHeaders: true,
+  legacyHeaders: false,
+  message: { error: 'Too many reminder requests. Please try again later.' },
+});
+
+getRemindersDb();
+console.log(`[reminders] database path: ${getDbPathForLogging()}`);
+startReminderScheduler();
+
 app.get('/api/health', (_req, res) => {
   res.json({
     ok: true,
     aiConfigured: Boolean(process.env.OPENAI_API_KEY),
+    pushConfigured: Boolean(process.env.VAPID_PUBLIC_KEY && process.env.VAPID_PRIVATE_KEY),
   });
 });
 
@@ -131,6 +156,15 @@ app.post('/api/assistant/plan', assistantLimiter, async (req, res) => {
     });
   }
 });
+
+app.get('/api/reminders/push/vapid-public-key', remindersLimiter, getVapidPublicKeyHandler);
+app.post('/api/reminders/push/subscribe', remindersLimiter, subscribePush);
+app.delete('/api/reminders/push/subscribe', remindersLimiter, unsubscribePush);
+app.get('/api/reminders', remindersLimiter, getReminders);
+app.post('/api/reminders', remindersLimiter, postReminder);
+app.put('/api/reminders/:id', remindersLimiter, putReminder);
+app.delete('/api/reminders/:id', remindersLimiter, deleteReminderHandler);
+app.post('/api/reminders/:id/complete', remindersLimiter, completeReminder);
 
 app.use('/api', (_req, res) => {
   res.status(404).json({ error: 'Not found' });
