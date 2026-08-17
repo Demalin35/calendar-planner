@@ -9,8 +9,18 @@ export default defineConfig({
     tailwindcss(),
     VitePWA({
       registerType: "autoUpdate",
-      includeAssets: ["favicon.svg", "icons.svg"],
+      // Register the service worker from HTML so iOS sees it on launch.
+      injectRegister: "inline",
+      includeAssets: [
+        "favicon.svg",
+        "icons.svg",
+        "pwa-192x192.png",
+        "pwa-512x512.png",
+        "pwa-512x512-maskable.png",
+        "push-handler.js",
+      ],
       manifest: {
+        id: "/",
         name: "Calendar Planner",
         short_name: "Planner",
         description: "Your local planner — no account needed",
@@ -19,16 +29,19 @@ export default defineConfig({
         display: "standalone",
         scope: "/",
         start_url: "/",
+        lang: "en",
         icons: [
           {
             src: "pwa-192x192.png",
             sizes: "192x192",
             type: "image/png",
+            purpose: "any",
           },
           {
             src: "pwa-512x512.png",
             sizes: "512x512",
             type: "image/png",
+            purpose: "any",
           },
           {
             src: "pwa-512x512-maskable.png",
@@ -39,9 +52,15 @@ export default defineConfig({
         ],
       },
       workbox: {
-        globPatterns: ["**/*.{js,css,html,ico,png,svg,woff2}"],
+        globPatterns: ["**/*.{js,css,html,ico,png,svg,woff2,webmanifest}"],
         navigateFallback: "/index.html",
-        navigateFallbackDenylist: [/^\/api\//],
+        navigateFallbackDenylist: [
+          /^\/api\//,
+          /^\/manifest\.webmanifest$/,
+          /^\/sw\.js$/,
+          /^\/push-handler\.js$/,
+          /^\/workbox-.*\.js$/,
+        ],
         runtimeCaching: [],
         importScripts: ["push-handler.js"],
       },

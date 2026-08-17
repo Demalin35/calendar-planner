@@ -78,10 +78,26 @@ console.log(`[reminders] database path: ${getDbPathForLogging()}`);
 startReminderScheduler();
 
 app.get('/api/health', (_req, res) => {
+  let pwaAssets: {
+    manifest: boolean;
+    serviceWorker: boolean;
+    icons: boolean;
+  } | undefined;
+
+  if (isProduction) {
+    const distPath = resolveDistPath();
+    pwaAssets = {
+      manifest: fs.existsSync(path.join(distPath, 'manifest.webmanifest')),
+      serviceWorker: fs.existsSync(path.join(distPath, 'sw.js')),
+      icons: fs.existsSync(path.join(distPath, 'pwa-192x192.png')),
+    };
+  }
+
   res.json({
     ok: true,
     aiConfigured: Boolean(process.env.OPENAI_API_KEY),
     pushConfigured: Boolean(process.env.VAPID_PUBLIC_KEY && process.env.VAPID_PRIVATE_KEY),
+    pwaAssets,
   });
 });
 
@@ -192,6 +208,51 @@ function resolveDistPath(): string {
   return candidates[0];
 }
 
+function registerPwaAssetRoutes(distPath: string) {
+  app.get('/manifest.webmanifest', (_req, res) => {
+    const manifestPath = path.join(distPath, 'manifest.webmanifest');
+    if (!fs.existsSync(manifestPath)) {
+      res.status(404).type('application/json').json({ error: 'Manifest not found' });
+      return;
+    }
+    res.type('application/manifest+json');
+    res.setHeader('Cache-Control', 'public, max-age=3600');
+    res.sendFile(manifestPath);
+  });
+
+  app.get('/sw.js', (_req, res, next) => {
+    const swPath = path.join(distPath, 'sw.js');
+    if (!fs.existsSync(swPath)) {
+      next();
+      return;
+    }
+    res.type('application/javascript; charset=UTF-8');
+    res.setHeader('Service-Worker-Allowed', '/');
+    res.setHeader('Cache-Control', 'no-cache');
+    res.sendFile(swPath);
+  });
+
+  app.get('/push-handler.js', (_req, res, next) => {
+    const handlerPath = path.join(distPath, 'push-handler.js');
+    if (!fs.existsSync(handlerPath)) {
+      next();
+      return;
+    }
+    res.type('application/javascript; charset=UTF-8');
+    res.setHeader('Cache-Control', 'public, max-age=3600');
+    res.sendFile(handlerPath);
+  });
+}
+
+function isPwaAssetPath(urlPath: string): boolean {
+  return (
+    urlPath === '/manifest.webmanifest' ||
+    urlPath === '/sw.js' ||
+    urlPath === '/push-handler.js' ||
+    /^\/workbox-.*\.js$/.test(urlPath)
+  );
+}
+
 if (isProduction) {
   const distPath = resolveDistPath();
   if (!fs.existsSync(path.join(distPath, 'index.html'))) {
@@ -201,12 +262,17 @@ if (isProduction) {
     process.exit(1);
   }
 
+  registerPwaAssetRoutes(distPath);
   app.use(express.static(distPath, { index: false }));
 
   // SPA fallback for non-API GET routes (Express 4 compatible).
   app.get('*', (req, res, next) => {
     if (req.path.startsWith('/api/')) {
       next();
+      return;
+    }
+    if (isPwaAssetPath(req.path)) {
+      res.status(404).type('application/json').json({ error: 'Not found' });
       return;
     }
     res.sendFile(path.join(distPath, 'index.html'));

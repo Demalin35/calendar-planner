@@ -11,7 +11,7 @@
     "dev:client": "vite",
     "dev:server": "tsx watch server/index.ts",
     "dev:all": "npm run dev:server & npm run dev:client",
-    "build": "node scripts/generate-pwa-icons.mjs && tsc -b && vite build && tsc -p server/tsconfig.build.json",
+    "build": "node scripts/generate-pwa-icons.mjs && tsc -b && vite build && node scripts/verify-pwa-build.mjs && tsc -p server/tsconfig.build.json",
     "start": "NODE_ENV=production node server-dist/index.js",
     "typecheck": "tsc -b --pretty false && tsc -p server/tsconfig.build.json --pretty false",
     "lint": "eslint .",

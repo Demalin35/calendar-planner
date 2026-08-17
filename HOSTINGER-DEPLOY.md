@@ -75,10 +75,60 @@ https://YOUR-DOMAIN.com/api/health
 Expected:
 
 ```json
-{"ok":true,"aiConfigured":true}
+{
+  "ok": true,
+  "aiConfigured": true,
+  "pushConfigured": true,
+  "pwaAssets": {
+    "manifest": true,
+    "serviceWorker": true,
+    "icons": true
+  }
+}
 ```
 
-If `aiConfigured` is `false`, `OPENAI_API_KEY` is missing in Hostinger env vars.
+If `pwaAssets` is missing or any value is `false`, the frontend build did not deploy correctly. Reminder push and iPhone Home Screen installation will not work until all three are `true`.
+
+Also verify the manifest directly:
+
+```text
+https://YOUR-DOMAIN.com/manifest.webmanifest
+```
+
+You must see JSON (`"display":"standalone"`), **not** the React HTML page.
+
+## iPhone Home Screen PWA (important)
+
+Calendar Planner must be opened from a **Home Screen icon**, not from a Safari tab. If Safari’s URL bar or bottom toolbar is visible, you are still in the browser.
+
+### Install correctly
+
+1. Open your **canonical Hostinger URL** in Safari (the exact domain you will keep using).
+2. Reload the page once (pull to refresh).
+3. Share → **Add to Home Screen** → Add.
+4. Close Safari completely.
+5. Launch **Calendar Planner** from the new Home Screen icon.
+
+### After changing PWA settings or domain
+
+**Delete the old Home Screen icon and add it again.** iOS keeps launch metadata from the original installation. An icon created before the manifest/service worker was correct will keep opening Safari.
+
+### Hostinger domain rules
+
+- Install from the **same HTTPS hostname** the app will use (temporary `*.onhostinger.site` or your custom domain — not both).
+- Do **not** install from `public_html` static hosting if the Node.js app serves the live site. Use only the Node.js Web App URL.
+- Avoid redirects between hostnames (for example `www` ↔ non-`www`, or temporary domain ↔ custom domain). If the Home Screen `start_url` redirects to another hostname, iOS opens Safari instead of standalone mode.
+- In Hostinger, attach **one canonical domain** to the Node.js Web App. Pick either the temporary domain **or** your custom domain for installation, not both.
+
+### Verify before installing on iPhone
+
+In Safari on the phone, open:
+
+```text
+https://YOUR-DOMAIN.com/manifest.webmanifest
+```
+
+Confirm JSON is returned. Then open Reminders only after launching from the Home Screen icon (no URL bar).
 
 ## Domain
 
