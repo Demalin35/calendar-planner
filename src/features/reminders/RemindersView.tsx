@@ -25,6 +25,7 @@ import {
   getNotificationPermissionState,
   type NotificationPermissionState,
 } from './pushNotifications';
+import { formatNotifyTimeDisplay } from './timeZone';
 import type { Reminder, ReminderDraft } from './types';
 
 function formatReminderDate(dateKey: string): string {
@@ -412,6 +413,8 @@ function ReminderSection({
                 />
                 <p className="mt-1 text-xs text-muted">
                   {formatReminderDate(reminder.dueDate)}
+                  {' · '}
+                  {formatNotifyTimeDisplay(reminder.notifyTime)}
                 </p>
               </button>
             </div>

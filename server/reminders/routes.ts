@@ -11,6 +11,7 @@ import {
   validateReminderInput,
 } from './db.js';
 import { getVapidPublicKey } from './push.js';
+import { normalizeReminder } from './schedule.js';
 import type {
   CompleteReminderResponse,
   CreateReminderBody,
@@ -68,6 +69,8 @@ export function putReminder(req: Request, res: Response) {
       dueDate: body.dueDate ?? existing.dueDate,
       recurrence: body.recurrence ?? existing.recurrence,
       notifyDaysBefore: body.notifyDaysBefore ?? existing.notifyDaysBefore,
+      notifyTime: body.notifyTime ?? existing.notifyTime,
+      timeZone: existing.timeZone,
     });
     if (validationError) {
       res.status(400).json({ error: validationError });
@@ -118,12 +121,15 @@ export function completeReminder(req: Request, res: Response) {
   if (existing.recurrence !== 'once') {
     const nextDueDate = addRecurrence(existing.dueDate, existing.recurrence);
     if (nextDueDate) {
+      const normalized = normalizeReminder(existing);
       response.suggestNext = {
-        title: existing.title,
-        emoji: existing.emoji,
+        title: normalized.title,
+        emoji: normalized.emoji,
         dueDate: nextDueDate,
-        recurrence: existing.recurrence,
-        notifyDaysBefore: existing.notifyDaysBefore,
+        recurrence: normalized.recurrence,
+        notifyDaysBefore: normalized.notifyDaysBefore,
+        notifyTime: normalized.notifyTime!,
+        timeZone: normalized.timeZone!,
       };
     }
   }

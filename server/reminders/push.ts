@@ -1,10 +1,11 @@
 import webpush from 'web-push';
 import {
-  listDueNotificationCandidates,
   listPushSubscriptions,
+  listRemindersDueForNotification,
   markNotificationSent,
-  wasNotificationSent,
+  wasNotificationSentForReminder,
 } from './db.js';
+import { getNotificationSentKey, normalizeReminder } from './schedule.js';
 import type { ReminderRecord } from './types.js';
 
 let configured = false;
@@ -47,11 +48,11 @@ function formatNotificationBody(reminder: ReminderRecord): string {
 export async function sendReminderPush(
   deviceId: string,
   reminder: ReminderRecord,
-): Promise<void> {
-  if (!configured) return;
+): Promise<boolean> {
+  if (!configured) return false;
 
   const subscriptions = listPushSubscriptions(deviceId);
-  if (subscriptions.length === 0) return;
+  if (subscriptions.length === 0) return false;
 
   const payload = JSON.stringify({
     title: `${reminder.emoji ? `${reminder.emoji} ` : ''}${reminder.title}`,
@@ -59,6 +60,7 @@ export async function sendReminderPush(
     url: `/?view=reminders&reminderId=${encodeURIComponent(reminder.id)}`,
   });
 
+  let anySuccess = false;
   await Promise.all(
     subscriptions.map(async (subscription) => {
       try {
@@ -72,25 +74,30 @@ export async function sendReminderPush(
           },
           payload,
         );
-      } catch (error) {
+        anySuccess = true;
+      } catch {
         console.error('[reminders] push delivery failed');
       }
     }),
   );
+
+  return anySuccess;
 }
 
 export async function processDueReminderNotifications() {
   if (!configured) return;
 
-  const today = new Date().toISOString().slice(0, 10);
-  const dueReminders = listDueNotificationCandidates(today);
+  const now = new Date();
+  const dueReminders = listRemindersDueForNotification(now);
 
   for (const reminder of dueReminders) {
-    const notifyOn = today;
-    if (wasNotificationSent(reminder.id, notifyOn)) continue;
+    if (wasNotificationSentForReminder(reminder)) continue;
 
-    await sendReminderPush(reminder.deviceId, reminder);
-    markNotificationSent(reminder.id, notifyOn);
+    const sent = await sendReminderPush(reminder.deviceId, reminder);
+    if (sent) {
+      const normalized = normalizeReminder(reminder);
+      markNotificationSent(reminder.id, getNotificationSentKey(normalized));
+    }
   }
 }
 

@@ -20,6 +20,10 @@ import {
   deleteReminderApi,
   updateReminderApi,
 } from './remindersApi';
+import {
+  DEFAULT_NOTIFY_TIME,
+  getBrowserTimeZone,
+} from './timeZone';
 import type { Reminder, ReminderDraft } from './types';
 
 const reminderSchema = z.object({
@@ -28,6 +32,7 @@ const reminderSchema = z.object({
   dueDate: z.string().min(1),
   recurrence: z.enum(['once', 'monthly', 'yearly']),
   notifyDaysBefore: z.number(),
+  notifyTime: z.string().regex(/^([01]\d|2[0-3]):([0-5]\d)$/, 'Invalid time'),
   completed: z.boolean(),
 });
 
@@ -63,6 +68,7 @@ export function ReminderForm({ editingReminder, onSaved }: ReminderFormProps) {
       dueDate: formatDateKey(selectedDate),
       recurrence: 'once',
       notifyDaysBefore: 0,
+      notifyTime: DEFAULT_NOTIFY_TIME,
       completed: false,
     },
   });
@@ -77,6 +83,7 @@ export function ReminderForm({ editingReminder, onSaved }: ReminderFormProps) {
         dueDate: editingReminder.dueDate,
         recurrence: editingReminder.recurrence,
         notifyDaysBefore: editingReminder.notifyDaysBefore,
+        notifyTime: editingReminder.notifyTime ?? DEFAULT_NOTIFY_TIME,
         completed: editingReminder.completed,
       });
       return;
@@ -89,6 +96,7 @@ export function ReminderForm({ editingReminder, onSaved }: ReminderFormProps) {
         dueDate: reminderDraft?.dueDate || formatDateKey(selectedDate),
         recurrence: reminderDraft?.recurrence ?? 'once',
         notifyDaysBefore: reminderDraft?.notifyDaysBefore ?? 0,
+        notifyTime: reminderDraft?.notifyTime ?? DEFAULT_NOTIFY_TIME,
         completed: false,
       });
     }
@@ -109,6 +117,7 @@ export function ReminderForm({ editingReminder, onSaved }: ReminderFormProps) {
       dueDate: values.dueDate,
       recurrence: values.recurrence,
       notifyDaysBefore: values.notifyDaysBefore,
+      notifyTime: values.notifyTime,
     };
 
     try {
@@ -118,7 +127,10 @@ export function ReminderForm({ editingReminder, onSaved }: ReminderFormProps) {
           completed: values.completed,
         });
       } else {
-        await createReminderApi(payload);
+        await createReminderApi({
+          ...payload,
+          timeZone: getBrowserTimeZone(),
+        });
       }
       onSaved();
       closeReminderModal();
@@ -205,6 +217,17 @@ export function ReminderForm({ editingReminder, onSaved }: ReminderFormProps) {
               </option>
             ))}
           </select>
+        </div>
+
+        <div>
+          <label className="mb-1.5 block text-sm font-medium text-foreground">
+            {rt(lang, 'notifyTime')}
+          </label>
+          <input
+            type="time"
+            {...register('notifyTime')}
+            className={clsx('w-full', themeClasses.input)}
+          />
         </div>
 
         {isEditing && (

@@ -8,6 +8,16 @@ import type {
   ReminderRecurrence,
   UpdateReminderBody,
 } from './types.js';
+import {
+  DEFAULT_NOTIFY_TIME,
+  DEFAULT_TIME_ZONE,
+  NOTIFY_TIME_RE,
+  getLegacyNotificationSentKey,
+  getNotificationSentKey,
+  getScheduledNotifyDate,
+  isValidIanaTimeZone,
+  normalizeReminder,
+} from './schedule.js';
 
 const DATE_RE = /^\d{4}-\d{2}-\d{2}$/;
 const VALID_RECURRENCE = new Set<ReminderRecurrence>([
@@ -97,12 +107,17 @@ export function validateReminderInput(body: CreateReminderBody): string | null {
   if (!VALID_NOTIFY_DAYS.has(body.notifyDaysBefore)) {
     return 'invalid notifyDaysBefore';
   }
+  const notifyTime = body.notifyTime ?? DEFAULT_NOTIFY_TIME;
+  if (!NOTIFY_TIME_RE.test(notifyTime)) return 'invalid notifyTime';
+  const timeZone = body.timeZone ?? DEFAULT_TIME_ZONE;
+  if (!isValidIanaTimeZone(timeZone)) return 'invalid timeZone';
   return null;
 }
 
 export function listReminders(deviceId: string): ReminderRecord[] {
   return getStore()
     .reminders.filter((reminder) => reminder.deviceId === deviceId)
+    .map(normalizeReminder)
     .sort((a, b) => {
       if (a.completed !== b.completed) return a.completed ? 1 : -1;
       if (a.dueDate !== b.dueDate) return a.dueDate.localeCompare(b.dueDate);
@@ -114,11 +129,11 @@ export function getReminder(
   deviceId: string,
   id: string,
 ): ReminderRecord | null {
-  return (
+  const reminder =
     getStore().reminders.find(
-      (reminder) => reminder.id === id && reminder.deviceId === deviceId,
-    ) ?? null
-  );
+      (entry) => entry.id === id && entry.deviceId === deviceId,
+    ) ?? null;
+  return reminder ? normalizeReminder(reminder) : null;
 }
 
 export function createReminder(
@@ -134,6 +149,8 @@ export function createReminder(
     dueDate: body.dueDate,
     recurrence: body.recurrence,
     notifyDaysBefore: body.notifyDaysBefore,
+    notifyTime: body.notifyTime ?? DEFAULT_NOTIFY_TIME,
+    timeZone: body.timeZone ?? DEFAULT_TIME_ZONE,
     completed: false,
     createdAt: now,
     updatedAt: now,
@@ -141,7 +158,7 @@ export function createReminder(
 
   getStore().reminders.push(reminder);
   persistStore();
-  return reminder;
+  return normalizeReminder(reminder);
 }
 
 export function updateReminder(
@@ -163,6 +180,8 @@ export function updateReminder(
     dueDate: body.dueDate ?? existing.dueDate,
     recurrence: body.recurrence ?? existing.recurrence,
     notifyDaysBefore: body.notifyDaysBefore ?? existing.notifyDaysBefore,
+    notifyTime: body.notifyTime ?? existing.notifyTime,
+    timeZone: existing.timeZone,
     completed: body.completed ?? existing.completed,
     completedAt:
       body.completed === true
@@ -180,7 +199,7 @@ export function updateReminder(
     updatedAt: new Date().toISOString(),
   };
   persistStore();
-  return data.reminders[index];
+  return normalizeReminder(data.reminders[index]);
 }
 
 export function deleteReminder(deviceId: string, id: string): boolean {
@@ -251,13 +270,21 @@ export function removePushSubscription(
   return true;
 }
 
-export function listDueNotificationCandidates(today: string): ReminderRecord[] {
+export function listRemindersDueForNotification(now: Date): ReminderRecord[] {
   return getStore()
     .reminders.filter((reminder) => !reminder.completed)
-    .filter((reminder) => {
-      const notifyOn = subtractDays(reminder.dueDate, reminder.notifyDaysBefore);
-      return notifyOn === today;
-    });
+    .map(normalizeReminder)
+    .filter((reminder) => getScheduledNotifyDate(reminder).getTime() <= now.getTime());
+}
+
+export function wasNotificationSentForReminder(
+  reminder: ReminderRecord,
+): boolean {
+  const normalized = normalizeReminder(reminder);
+  const key = getNotificationSentKey(normalized);
+  if (wasNotificationSent(reminder.id, key)) return true;
+  const legacyKey = getLegacyNotificationSentKey(normalized);
+  return wasNotificationSent(reminder.id, legacyKey);
 }
 
 export function markNotificationSent(reminderId: string, notifyOn: string) {
@@ -277,13 +304,6 @@ export function wasNotificationSent(
   return getStore().notificationSent.some(
     (entry) => entry.reminderId === reminderId && entry.notifyOn === notifyOn,
   );
-}
-
-export function subtractDays(dateKey: string, days: number): string {
-  const [year, month, day] = dateKey.split('-').map(Number);
-  const date = new Date(Date.UTC(year, month - 1, day));
-  date.setUTCDate(date.getUTCDate() - days);
-  return date.toISOString().slice(0, 10);
 }
 
 export function addRecurrence(

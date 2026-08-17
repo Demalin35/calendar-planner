@@ -8,6 +8,8 @@ export interface ReminderRecord {
   dueDate: string;
   recurrence: ReminderRecurrence;
   notifyDaysBefore: number;
+  notifyTime?: string;
+  timeZone?: string;
   completed: boolean;
   completedAt?: string;
   createdAt: string;
@@ -29,6 +31,8 @@ export interface CreateReminderBody {
   dueDate: string;
   recurrence: ReminderRecurrence;
   notifyDaysBefore: number;
+  notifyTime?: string;
+  timeZone?: string;
 }
 
 export interface UpdateReminderBody extends Partial<CreateReminderBody> {
@@ -51,5 +55,7 @@ export interface CompleteReminderResponse {
     dueDate: string;
     recurrence: ReminderRecurrence;
     notifyDaysBefore: number;
+    notifyTime: string;
+    timeZone: string;
   };
 }

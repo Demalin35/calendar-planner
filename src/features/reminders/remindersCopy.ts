@@ -12,6 +12,7 @@ type RemindersCopyKey =
   | 'monthly'
   | 'yearly'
   | 'remindMe'
+  | 'notifyTime'
   | 'onDueDate'
   | 'oneDayBefore'
   | 'threeDaysBefore'
@@ -68,6 +69,7 @@ const COPY: Record<RemindersLanguage, Record<RemindersCopyKey, string>> = {
     monthly: 'Monthly',
     yearly: 'Yearly',
     remindMe: 'Remind me',
+    notifyTime: 'Time',
     onDueDate: 'On the due date',
     oneDayBefore: '1 day before',
     threeDaysBefore: '3 days before',
@@ -131,6 +133,7 @@ const COPY: Record<RemindersLanguage, Record<RemindersCopyKey, string>> = {
     monthly: 'Ежемесячно',
     yearly: 'Ежегодно',
     remindMe: 'Напомнить',
+    notifyTime: 'Время',
     onDueDate: 'В день срока',
     oneDayBefore: 'За 1 день',
     threeDaysBefore: 'За 3 дня',

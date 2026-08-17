@@ -8,6 +8,8 @@ export interface Reminder {
   dueDate: string;
   recurrence: ReminderRecurrence;
   notifyDaysBefore: number;
+  notifyTime?: string;
+  timeZone?: string;
   completed: boolean;
   completedAt?: string;
   createdAt: string;
@@ -20,6 +22,8 @@ export interface ReminderDraft {
   dueDate: string;
   recurrence: ReminderRecurrence;
   notifyDaysBefore: number;
+  notifyTime?: string;
+  timeZone?: string;
 }
 
 export interface CompleteReminderResult {
