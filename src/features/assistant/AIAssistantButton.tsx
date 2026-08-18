@@ -14,7 +14,7 @@ export function AIAssistantButton() {
         type="button"
         onClick={() => (isAssistantOpen ? closeAssistant() : openAssistant())}
         className={clsx(
-          'fixed bottom-5 right-4 z-40 flex h-14 w-14 items-center justify-center rounded-full bg-primary text-white shadow-lg transition hover:bg-primary-strong sm:right-6',
+          'safe-area-fab fixed z-40 flex h-14 w-14 items-center justify-center rounded-full bg-primary text-white shadow-lg transition hover:bg-primary-strong',
           isAssistantOpen && 'ring-4 ring-primary-soft',
         )}
         aria-label={isAssistantOpen ? 'Close planning assistant' : 'Open planning assistant'}

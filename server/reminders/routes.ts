@@ -6,11 +6,12 @@ import {
   deleteReminder,
   getReminder,
   listReminders,
+  listPushSubscriptions,
   removePushSubscription,
   updateReminder,
   validateReminderInput,
 } from './db.js';
-import { getVapidPublicKey } from './push.js';
+import { getVapidPublicKey, isPushConfigured } from './push.js';
 import { normalizeReminder } from './schedule.js';
 import type {
   CompleteReminderResponse,
@@ -144,6 +145,17 @@ export function getVapidPublicKeyHandler(_req: Request, res: Response) {
     return;
   }
   res.json({ publicKey });
+}
+
+export function getPushSubscriptionStatus(req: Request, res: Response) {
+  const deviceId = getDeviceId(req, res);
+  if (!deviceId) return;
+
+  const subscriptions = listPushSubscriptions(deviceId);
+  res.json({
+    subscribed: subscriptions.length > 0,
+    pushConfigured: isPushConfigured(),
+  });
 }
 
 export function subscribePush(req: Request, res: Response) {

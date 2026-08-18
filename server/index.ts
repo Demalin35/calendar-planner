@@ -14,6 +14,7 @@ import {
   completeReminder,
   deleteReminderHandler,
   getReminders,
+  getPushSubscriptionStatus,
   getVapidPublicKeyHandler,
   postReminder,
   putReminder,
@@ -182,6 +183,7 @@ app.post('/api/assistant/plan', assistantLimiter, async (req, res) => {
 });
 
 app.get('/api/reminders/push/vapid-public-key', remindersLimiter, getVapidPublicKeyHandler);
+app.get('/api/reminders/push/status', remindersLimiter, getPushSubscriptionStatus);
 app.post('/api/reminders/push/subscribe', remindersLimiter, subscribePush);
 app.delete('/api/reminders/push/subscribe', remindersLimiter, unsubscribePush);
 app.get('/api/reminders', remindersLimiter, getReminders);

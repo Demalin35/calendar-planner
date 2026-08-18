@@ -23,7 +23,9 @@ import {
 import {
   enableReminderNotifications,
   getNotificationPermissionState,
-  type NotificationPermissionState,
+  isPushApiAvailable,
+  resolveReminderPushStatus,
+  type ReminderPushStatus,
 } from './pushNotifications';
 import { formatNotifyTimeDisplay } from './timeZone';
 import type { Reminder, ReminderDraft } from './types';
@@ -47,8 +49,9 @@ export function RemindersView() {
 
   const [reminders, setReminders] = useState<Reminder[]>([]);
   const [loadError, setLoadError] = useState<string | null>(null);
-  const [notificationState, setNotificationState] =
-    useState<NotificationPermissionState>(() => getNotificationPermissionState());
+  const [pushStatus, setPushStatus] = useState<ReminderPushStatus>(() =>
+    getNotificationPermissionState(),
+  );
   const [pendingNext, setPendingNext] = useState<{
     dueDate: string;
     draft: ReminderDraft;
@@ -99,21 +102,34 @@ export function RemindersView() {
     });
   };
 
-  useEffect(() => {
-    const refreshPermission = () => {
-      setNotificationState(getNotificationPermissionState());
-    };
-
-    refreshPermission();
-    document.addEventListener('visibilitychange', refreshPermission);
-    return () => {
-      document.removeEventListener('visibilitychange', refreshPermission);
-    };
+  const refreshPushStatus = useCallback(async () => {
+    if (!isPushApiAvailable()) {
+      setPushStatus(getNotificationPermissionState());
+      return;
+    }
+    const status = await resolveReminderPushStatus();
+    setPushStatus(status);
   }, []);
+
+  useEffect(() => {
+    void refreshPushStatus();
+    const onVisible = () => {
+      if (document.visibilityState === 'visible') {
+        void refreshPushStatus();
+      }
+    };
+    document.addEventListener('visibilitychange', onVisible);
+    return () => {
+      document.removeEventListener('visibilitychange', onVisible);
+    };
+  }, [refreshPushStatus]);
 
   const handleEnableNotifications = async () => {
     const next = await enableReminderNotifications();
-    setNotificationState(next.state);
+    setPushStatus(next.state);
+    if (next.state === 'registered') {
+      await refreshPushStatus();
+    }
   };
 
   const handleComplete = async (reminder: Reminder) => {
@@ -147,22 +163,23 @@ export function RemindersView() {
     setPendingNext(null);
   };
 
-  const pushAvailable = getNotificationPermissionState() !== 'unsupported';
+  const pushAvailable = isPushApiAvailable();
   const showIosOpenFromHomeHint =
-    isIosSafariBrowser() && notificationState !== 'granted';
+    isIosSafariBrowser() && pushStatus !== 'registered';
   const showEnableButton =
     pushAvailable &&
-    notificationState !== 'granted' &&
-    notificationState !== 'denied' &&
-    notificationState !== 'misconfigured';
+    (pushStatus === 'default' ||
+      pushStatus === 'needs_registration' ||
+      pushStatus === 'error');
   const showNotificationSection =
     showIosOpenFromHomeHint ||
     isIosStandalonePwa() ||
     pushAvailable ||
-    notificationState === 'granted' ||
-    notificationState === 'denied' ||
-    notificationState === 'misconfigured' ||
-    notificationState === 'error';
+    pushStatus === 'registered' ||
+    pushStatus === 'needs_registration' ||
+    pushStatus === 'denied' ||
+    pushStatus === 'misconfigured' ||
+    pushStatus === 'error';
 
   return (
     <>
@@ -244,8 +261,25 @@ export function RemindersView() {
                     <li>{rt(lang, 'iosOpenFromHomeStep2')}</li>
                   </ol>
                 </div>
-              ) : notificationState === 'granted' ? (
-                <p className="text-xs text-muted">{rt(lang, 'notificationsEnabled')}</p>
+              ) : pushStatus === 'registered' ? (
+                <p className="text-xs text-muted">{rt(lang, 'notificationsRegistered')}</p>
+              ) : pushStatus === 'needs_registration' ? (
+                <div className="flex items-start gap-2">
+                  <Bell size={16} className="mt-0.5 shrink-0 text-primary-strong" />
+                  <div className="min-w-0 flex-1">
+                    <p className="text-xs text-amber-600 dark:text-amber-400">
+                      {rt(lang, 'notificationsNeedsReregister')}
+                    </p>
+                    <button
+                      type="button"
+                      onClick={() => void handleEnableNotifications()}
+                      disabled={!isOnline}
+                      className={clsx('mt-3', themeClasses.primaryBtnSm)}
+                    >
+                      {rt(lang, 'reRegisterNotifications')}
+                    </button>
+                  </div>
+                </div>
               ) : (
                 <div className="flex items-start gap-2">
                   <Bell size={16} className="mt-0.5 shrink-0 text-primary-strong" />
@@ -268,24 +302,24 @@ export function RemindersView() {
                       </button>
                     )}
 
-                    {notificationState === 'denied' && (
+                    {pushStatus === 'denied' && (
                       <p className="mt-2 text-xs text-rose-600">
                         {rt(lang, 'notificationsDenied')}
                       </p>
                     )}
-                    {notificationState === 'unsupported' && (
+                    {pushStatus === 'unsupported' && (
                       <p className="mt-2 text-xs text-muted">
                         {isIosStandalonePwa()
                           ? rt(lang, 'notificationsUnsupportedInstalled')
                           : rt(lang, 'notificationsUnsupported')}
                       </p>
                     )}
-                    {notificationState === 'misconfigured' && (
+                    {pushStatus === 'misconfigured' && (
                       <p className="mt-2 text-xs text-rose-600">
                         {rt(lang, 'notificationsMisconfigured')}
                       </p>
                     )}
-                    {notificationState === 'error' && (
+                    {pushStatus === 'error' && (
                       <div className="mt-2 space-y-2">
                         <p className="text-xs text-rose-600">
                           {rt(lang, 'notificationsEnableError')}

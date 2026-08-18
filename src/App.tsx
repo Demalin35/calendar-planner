@@ -32,7 +32,7 @@ function App() {
 
   return (
     <div className={themeClasses.page}>
-      <div className="mx-auto flex min-h-screen w-full min-w-0 max-w-5xl flex-col px-3 py-4 sm:px-6 sm:py-6">
+      <div className="safe-area-page mx-auto flex min-h-screen w-full min-w-0 max-w-5xl flex-col sm:px-0">
         <header className="mb-4 min-w-0">
           <div className="flex items-start justify-between gap-3">
             <div className="min-w-0">

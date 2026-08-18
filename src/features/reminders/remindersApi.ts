@@ -74,6 +74,15 @@ export async function completeReminderApi(
   });
 }
 
+export async function fetchPushSubscriptionStatus(): Promise<{
+  subscribed: boolean;
+  pushConfigured: boolean;
+}> {
+  return request<{ subscribed: boolean; pushConfigured: boolean }>(
+    '/api/reminders/push/status',
+  );
+}
+
 export async function fetchVapidPublicKey(): Promise<string> {
   const data = await request<{ publicKey: string }>(
     '/api/reminders/push/vapid-public-key',

@@ -20,6 +20,9 @@ type RemindersCopyKey =
   | 'enableNotifications'
   | 'enableNotificationsHint'
   | 'notificationsEnabled'
+  | 'notificationsRegistered'
+  | 'notificationsNeedsReregister'
+  | 'reRegisterNotifications'
   | 'notificationsDenied'
   | 'notificationsUnsupported'
   | 'notificationsMisconfigured'
@@ -79,6 +82,11 @@ const COPY: Record<RemindersLanguage, Record<RemindersCopyKey, string>> = {
     enableNotificationsHint:
       'Allow Calendar Planner to notify you when important reminders are approaching.',
     notificationsEnabled: 'Notifications enabled',
+    notificationsRegistered:
+      'This device is registered for reminder notifications.',
+    notificationsNeedsReregister:
+      'Notifications are allowed, but this device is not registered on the server. Tap below to register again (needed after app updates).',
+    reRegisterNotifications: 'Register for notifications',
     notificationsDenied:
       'Notifications are blocked. Enable them for Calendar Planner in iPhone Settings.',
     notificationsUnsupported: 'Push notifications are not supported in this browser.',
@@ -144,6 +152,11 @@ const COPY: Record<RemindersLanguage, Record<RemindersCopyKey, string>> = {
     enableNotificationsHint:
       'Разрешите Calendar Planner отправлять уведомления о важных напоминаниях.',
     notificationsEnabled: 'Уведомления включены',
+    notificationsRegistered:
+      'Это устройство зарегистрировано для уведомлений о напоминаниях.',
+    notificationsNeedsReregister:
+      'Уведомления разрешены, но устройство не зарегистрировано на сервере. Нажмите ниже, чтобы зарегистрироваться снова (нужно после обновлений приложения).',
+    reRegisterNotifications: 'Зарегистрировать уведомления',
     notificationsDenied:
       'Уведомления заблокированы. Включите их для Calendar Planner в настройках iPhone.',
     notificationsUnsupported: 'Push-уведомления не поддерживаются в этом браузере.',

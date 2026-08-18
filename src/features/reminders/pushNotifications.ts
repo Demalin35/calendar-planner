@@ -1,5 +1,9 @@
 import { canEnableIosWebPush, isIosDevice } from '../../utils/pwa';
-import { fetchVapidPublicKey, subscribePushApi } from './remindersApi';
+import {
+  fetchPushSubscriptionStatus,
+  fetchVapidPublicKey,
+  subscribePushApi,
+} from './remindersApi';
 
 export type NotificationPermissionState =
   | 'unsupported'
@@ -9,8 +13,13 @@ export type NotificationPermissionState =
   | 'misconfigured'
   | 'error';
 
+export type ReminderPushStatus =
+  | NotificationPermissionState
+  | 'registered'
+  | 'needs_registration';
+
 export type PushEnableResult = {
-  state: NotificationPermissionState;
+  state: ReminderPushStatus;
 };
 
 /**
@@ -37,6 +46,59 @@ export function getNotificationPermissionState(): NotificationPermissionState {
   return Notification.permission;
 }
 
+async function registerBrowserSubscriptionWithServer(): Promise<boolean> {
+  const registration = await window.navigator.serviceWorker.ready;
+  if (!registration.pushManager) return false;
+
+  let publicKey: string;
+  try {
+    publicKey = await fetchVapidPublicKey();
+  } catch {
+    return false;
+  }
+
+  const existing = await registration.pushManager.getSubscription();
+  const subscription =
+    existing ??
+    (await registration.pushManager.subscribe({
+      userVisibleOnly: true,
+      applicationServerKey: urlBase64ToUint8Array(publicKey),
+    }));
+
+  await subscribePushApi(subscription.toJSON());
+  return true;
+}
+
+export async function resolveReminderPushStatus(): Promise<ReminderPushStatus> {
+  const permission = getNotificationPermissionState();
+  if (permission !== 'granted') {
+    return permission;
+  }
+
+  if (!navigator.onLine) {
+    return 'needs_registration';
+  }
+
+  try {
+    const serverStatus = await fetchPushSubscriptionStatus();
+    if (!serverStatus.pushConfigured) {
+      return 'misconfigured';
+    }
+    if (serverStatus.subscribed) {
+      return 'registered';
+    }
+  } catch {
+    return 'needs_registration';
+  }
+
+  try {
+    const synced = await registerBrowserSubscriptionWithServer();
+    return synced ? 'registered' : 'needs_registration';
+  } catch {
+    return 'needs_registration';
+  }
+}
+
 export async function enableReminderNotifications(): Promise<PushEnableResult> {
   if (!isPushApiAvailable()) {
     return { state: 'unsupported' };
@@ -48,29 +110,14 @@ export async function enableReminderNotifications(): Promise<PushEnableResult> {
   }
 
   try {
-    const registration = await window.navigator.serviceWorker.ready;
+    await fetchVapidPublicKey();
+  } catch {
+    return { state: 'misconfigured' };
+  }
 
-    if (!registration.pushManager) {
-      return { state: 'unsupported' };
-    }
-
-    let publicKey: string;
-    try {
-      publicKey = await fetchVapidPublicKey();
-    } catch {
-      return { state: 'misconfigured' };
-    }
-
-    const existing = await registration.pushManager.getSubscription();
-    const subscription =
-      existing ??
-      (await registration.pushManager.subscribe({
-        userVisibleOnly: true,
-        applicationServerKey: urlBase64ToUint8Array(publicKey),
-      }));
-
-    await subscribePushApi(subscription.toJSON());
-    return { state: 'granted' };
+  try {
+    const registered = await registerBrowserSubscriptionWithServer();
+    return { state: registered ? 'registered' : 'error' };
   } catch {
     return { state: 'error' };
   }

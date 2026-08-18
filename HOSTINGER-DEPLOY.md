@@ -43,8 +43,22 @@ Add these in the Node.js Web App environment settings:
 | `OPENAI_MODEL` | recommended | `gpt-4.1-mini` |
 | `WORK_DAY_START` | optional | `09:00` |
 | `WORK_DAY_END` | optional | `18:00` |
+| `VAPID_PUBLIC_KEY` | yes (for reminders push) | from `npx web-push generate-vapid-keys` |
+| `VAPID_PRIVATE_KEY` | yes (for reminders push) | from `npx web-push generate-vapid-keys` |
+| `VAPID_SUBJECT` | recommended | `mailto:you@example.com` |
+| `REMINDERS_DATA_PATH` | **strongly recommended** | `/home/.../persistent/reminders.json` |
 
 Hostinger provides `PORT` automatically — you usually do **not** set it.
+
+### Reminder notifications on Hostinger
+
+Without `REMINDERS_DATA_PATH`, reminder data and push subscriptions are stored inside the deploy folder and **can be wiped on redeploy**. The app may still show “notifications allowed” on your phone, but the server will have nothing to send to.
+
+1. Generate VAPID keys locally: `npx web-push generate-vapid-keys`
+2. Add `VAPID_PUBLIC_KEY`, `VAPID_PRIVATE_KEY`, and `VAPID_SUBJECT` to Hostinger env vars
+3. Set `REMINDERS_DATA_PATH` to a **persistent path outside** the deploy directory (Hostinger file manager or a mounted data folder)
+4. Redeploy, then open Reminders from the **Home Screen PWA** and tap **Register for notifications** if prompted
+5. Confirm `/api/health` returns `"pushConfigured": true`
 
 ### Not required for this Hostinger setup
 
