@@ -322,13 +322,12 @@ export function AIAssistantPanel() {
 
       <div
         className={clsx(
-          'relative z-10 flex min-w-0 flex-col bg-surface shadow-2xl ring-1 ring-border',
-          'h-[calc(100dvh-16px)] w-full max-w-[calc(100vw-16px)]',
-          'm-2 rounded-2xl sm:m-0 sm:h-full sm:max-h-none sm:max-w-md sm:rounded-none',
+          'safe-area-assistant-panel relative z-10 flex h-dvh min-h-0 w-full min-w-0 flex-col bg-surface shadow-2xl ring-1 ring-border',
+          'sm:h-full sm:max-w-md sm:rounded-none',
         )}
         style={{ touchAction: 'pan-y' }}
       >
-        <div className="flex items-start justify-between gap-3 border-b border-border px-4 py-4">
+        <div className="flex shrink-0 items-start justify-between gap-3 border-b border-border px-4 py-4">
           <div className="min-w-0">
             <div className="flex items-center gap-2">
               <Sparkles size={18} className="shrink-0 text-primary-strong" />
@@ -451,7 +450,7 @@ export function AIAssistantPanel() {
           </div>
         </div>
 
-        <div className="border-t border-border p-4">
+        <div className="shrink-0 border-t border-border p-4">
           {!isOnline && (
             <p className="mb-3 text-xs text-muted" role="status">
               {t(responseLanguage, 'offline')}

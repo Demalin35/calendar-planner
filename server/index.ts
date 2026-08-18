@@ -21,7 +21,7 @@ import {
   subscribePush,
   unsubscribePush,
 } from './reminders/routes.js';
-import { startReminderScheduler } from './reminders/push.js';
+import { getPushDiagnostics, startReminderScheduler } from './reminders/push.js';
 import type { PlanRequestBody } from './types.js';
 
 const __filename = fileURLToPath(import.meta.url);
@@ -77,6 +77,16 @@ const remindersLimiter = rateLimit({
 getRemindersDb();
 console.log(`[reminders] database path: ${getDbPathForLogging()}`);
 startReminderScheduler();
+const pushDiagnostics = getPushDiagnostics();
+console.log(
+  `[reminders] push public key present: ${pushDiagnostics.publicKeyPresent}`,
+);
+console.log(
+  `[reminders] push private key present: ${pushDiagnostics.privateKeyPresent}`,
+);
+console.log(
+  `[reminders] push initialized: ${pushDiagnostics.pushInitialized}`,
+);
 
 app.get('/api/health', (_req, res) => {
   let pwaAssets: {
@@ -97,7 +107,8 @@ app.get('/api/health', (_req, res) => {
   res.json({
     ok: true,
     aiConfigured: Boolean(process.env.OPENAI_API_KEY),
-    pushConfigured: Boolean(process.env.VAPID_PUBLIC_KEY && process.env.VAPID_PRIVATE_KEY),
+    pushConfigured: getPushDiagnostics().pushInitialized,
+    push: getPushDiagnostics(),
     pwaAssets,
   });
 });

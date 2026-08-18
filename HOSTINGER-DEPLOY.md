@@ -54,11 +54,40 @@ Hostinger provides `PORT` automatically — you usually do **not** set it.
 
 Without `REMINDERS_DATA_PATH`, reminder data and push subscriptions are stored inside the deploy folder and **can be wiped on redeploy**. The app may still show “notifications allowed” on your phone, but the server will have nothing to send to.
 
-1. Generate VAPID keys locally: `npx web-push generate-vapid-keys`
-2. Add `VAPID_PUBLIC_KEY`, `VAPID_PRIVATE_KEY`, and `VAPID_SUBJECT` to Hostinger env vars
-3. Set `REMINDERS_DATA_PATH` to a **persistent path outside** the deploy directory (Hostinger file manager or a mounted data folder)
-4. Redeploy, then open Reminders from the **Home Screen PWA** and tap **Register for notifications** if prompted
-5. Confirm `/api/health` returns `"pushConfigured": true`
+1. Generate VAPID keys locally:
+
+```bash
+npx web-push generate-vapid-keys
+```
+
+2. Copy the output into Hostinger environment variables **exactly** as:
+
+| Hostinger variable | Value |
+|--------------------|--------|
+| `VAPID_PUBLIC_KEY` | the **Public Key** line from the command output |
+| `VAPID_PRIVATE_KEY` | the **Private Key** line from the command output |
+| `VAPID_SUBJECT` | `mailto:your-email@example.com` |
+
+The public and private keys **must be from the same generated pair**. Never commit the private key to Git or put it in frontend code.
+
+3. Set `REMINDERS_DATA_PATH` to a **persistent path outside** the deploy directory.
+
+4. **Save** the environment variables in Hostinger, then **restart/redeploy** the Node.js Web App so the running process picks them up. Changing env vars alone does not update a already-running process until restart.
+
+5. Confirm `/api/health` returns:
+
+```json
+{
+  "pushConfigured": true,
+  "push": {
+    "publicKeyPresent": true,
+    "privateKeyPresent": true,
+    "pushInitialized": true
+  }
+}
+```
+
+6. Open Reminders from the **Home Screen PWA** and tap **Enable notifications** (or **Register for notifications** after a redeploy).
 
 ### Not required for this Hostinger setup
 

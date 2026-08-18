@@ -10,6 +10,16 @@ import type { ReminderRecord } from './types.js';
 
 let configured = false;
 
+export function getPushDiagnostics() {
+  const publicKey = process.env.VAPID_PUBLIC_KEY?.trim();
+  const privateKey = process.env.VAPID_PRIVATE_KEY?.trim();
+  return {
+    publicKeyPresent: Boolean(publicKey),
+    privateKeyPresent: Boolean(privateKey),
+    pushInitialized: configured,
+  };
+}
+
 export function configureWebPush() {
   const publicKey = process.env.VAPID_PUBLIC_KEY?.trim();
   const privateKey = process.env.VAPID_PRIVATE_KEY?.trim();
@@ -24,9 +34,17 @@ export function configureWebPush() {
     return false;
   }
 
-  webpush.setVapidDetails(subject, publicKey, privateKey);
-  configured = true;
-  return true;
+  try {
+    webpush.setVapidDetails(subject, publicKey, privateKey);
+    configured = true;
+    return true;
+  } catch {
+    console.error(
+      '[reminders] VAPID keys are invalid — push notifications are disabled.',
+    );
+    configured = false;
+    return false;
+  }
 }
 
 export function getVapidPublicKey(): string | null {

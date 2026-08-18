@@ -71,32 +71,39 @@ async function registerBrowserSubscriptionWithServer(): Promise<boolean> {
 
 export async function resolveReminderPushStatus(): Promise<ReminderPushStatus> {
   const permission = getNotificationPermissionState();
-  if (permission !== 'granted') {
-    return permission;
+  if (permission === 'unsupported') {
+    return 'unsupported';
   }
 
-  if (!navigator.onLine) {
-    return 'needs_registration';
-  }
+  if (navigator.onLine) {
+    try {
+      const serverStatus = await fetchPushSubscriptionStatus();
+      if (!serverStatus.pushConfigured) {
+        return 'misconfigured';
+      }
 
-  try {
-    const serverStatus = await fetchPushSubscriptionStatus();
-    if (!serverStatus.pushConfigured) {
-      return 'misconfigured';
+      if (permission === 'granted') {
+        if (serverStatus.subscribed) {
+          return 'registered';
+        }
+
+        try {
+          const synced = await registerBrowserSubscriptionWithServer();
+          return synced ? 'registered' : 'needs_registration';
+        } catch {
+          return 'needs_registration';
+        }
+      }
+    } catch {
+      if (permission === 'granted') {
+        return 'needs_registration';
+      }
     }
-    if (serverStatus.subscribed) {
-      return 'registered';
-    }
-  } catch {
+  } else if (permission === 'granted') {
     return 'needs_registration';
   }
 
-  try {
-    const synced = await registerBrowserSubscriptionWithServer();
-    return synced ? 'registered' : 'needs_registration';
-  } catch {
-    return 'needs_registration';
-  }
+  return permission;
 }
 
 export async function enableReminderNotifications(): Promise<PushEnableResult> {
